@@ -18,6 +18,16 @@ La source est le commit Main distant `ab62f1fe094ecec1bc687e89b4e66652cbb45a1c` 
 
 Ce premier déploiement a été déclenché manuellement avec `workflow_dispatch`. Les pushes suivants sur `Main` exécutent le même pipeline ; vérifier dans [GitHub Actions](https://github.com/laurentkai/my-press-review/actions) le résultat associé au SHA source, puis le manifeste de `Production`.
 
+## Publication de l’itération 3
+
+La révision `c2fb5a875de1ede655a18b4da89a949594bafa83` a été intégrée à `Main` et poussée ; le push a déclenché le déploiement automatique [run 43942205690](https://github.com/laurentkai/my-press-review/actions/runs/43942205690). `verify` a réussi en 23 s (format, 57 tests, typecheck, build et migration locale), `deploy` en 43 s (migration distante `0002` et injection du secret `TEST_ACCESS_CODE`) et `promote` en 8 s.
+
+La branche distante et la référence locale `Production` sont à `3c9a4b1`. Son manifeste `release.json` identifie `c2fb5a875de1ede655a18b4da89a949594bafa83` comme `sourceSha`. Le Worker de production est accessible sur [my-press-review.laurent-kaiser.workers.dev](https://my-press-review.laurent-kaiser.workers.dev) ; la migration `0002` et l’espace d’essai sont maintenant en ligne.
+
+La vérification navigateur de production a confirmé le contrôle d’accès : `GET /api/trial/session` sans cookie renvoie `authenticated: false` et `available: true`, `GET /api/trial/workspace` renvoie `401` sans session, puis un login avec le code valide renvoie `200` et ouvre une session. Même authentifié, `GET /api/admin/users` répond `401`; un nouvel appel anonyme au workspace avec `credentials: omit` est également refusé.
+
+Le Worker a collecté les sept flux actifs : 169 articles enregistrés, dont 30 déjà collectés par le Cron pour 7sur7 (`refresh` a répondu `not_due`), puis 30 DH, 30 La Libre, 19 Le Figaro, 20 Le JSL, 10 Investing.com et 30 Gouvernement.lu. L’API en affichait 129, avec une limite de 20 par source. Le Soir et Zonebourse sont restés bloqués sans flux, avec zéro article et `last_success_at` nul. Le relevé local antérieur de 166 articles/126 affichés reste distinct.
+
 ## Vérification continue
 
 `.github/workflows/deploy.yml` vérifie les pull requests ciblant `Main` et les pushes sur `Main` (ainsi qu’un déclenchement manuel sur `Main`). Le job de vérification exécute, dans l’ordre :
@@ -29,7 +39,7 @@ npm run check
 npm run db:migrate:local
 ```
 
-`npm run check` effectue le typecheck, les tests Vitest (29 au total dans cette révision) et le build Vite/Cloudflare. La migration de ce job ne cible que la base D1 locale.
+`npm run check` effectue le typecheck, les tests Vitest et le build Vite/Cloudflare. Le contrôle rapporté pour l’itération 3 compte 57 tests (29 dans le contrôle de l’itération 2). La migration de ce job ne cible que la base D1 locale.
 
 Sur `Main`, le build vérifié est transféré comme artefact `verified-build-<run_id>` ; le job de déploiement télécharge cet artefact au lieu de reconstruire les bundles. Il lance `npm ci --ignore-scripts` pour disposer de Wrangler et des scripts de préparation, sans relancer le build/tests. Les artefacts de build et de release expirent après un jour, avec remplacement en cas de rerun du même workflow.
 
@@ -47,15 +57,18 @@ Le job vérifie ensuite à nouveau le `Main` distant avant d’enregistrer le po
 
 ## Configuration et garde-fous du déploiement
 
-Le job de déploiement a la permission GitHub `contents: read`. Il ne poursuit que si les trois paramètres suivants sont définis :
+Le job de déploiement a la permission GitHub `contents: read`. Il ne poursuit que si les trois paramètres Cloudflare et le secret d’accès d’essai sont configurés :
 
 | Paramètre GitHub | Type | Rôle |
 | --- | --- | --- |
 | `CLOUDFLARE_API_TOKEN` | Secret | Authentification Cloudflare |
 | `CLOUDFLARE_ACCOUNT_ID` | Variable | Identifiant du compte Cloudflare ciblé |
 | `CLOUDFLARE_D1_DATABASE_ID` | Variable | Identifiant de la base D1 de production ciblée |
+| `TEST_ACCESS_CODE` | Secret | Code d’accès temporaire à l’espace d’essai |
 
-Si l’un manque, le workflow publie une notice et un résumé « Deployment not configured » ; aucun déploiement Cloudflare ni promotion vers `Production` n’est effectué. Les identifiants de compte et de base sont des identifiants, pas des secrets, et leurs variables peuvent apparaître dans les journaux publics ; ne jamais y placer le token.
+Si un paramètre Cloudflare manque ou si le secret `TEST_ACCESS_CODE` est absent/vide, le workflow publie une notice et un résumé « Deployment not configured » ; aucun déploiement Cloudflare ni promotion vers `Production` n’est effectué. Les identifiants de compte et de base sont des identifiants, pas des secrets, et leurs variables peuvent apparaître dans les journaux publics ; ne jamais y placer un secret.
+
+Le workflow transmet `TEST_ACCESS_CODE` au Worker via un fichier JSON temporaire protégé (`umask 077`, suppression par `trap`) et Wrangler `--secrets-file`. Le code n’est pas placé dans le bundle de release. L’export exclut explicitement `.dev.vars`, fichier local ignoré par Git.
 
 Les scripts valident le format des deux identifiants et refusent le placeholder D1 tout-zéro. Ils les injectent seulement dans `.deployment/wrangler.json`, répertoire ignoré par Git. L’export `.release/wrangler.json` conserve un `database_id` placeholder et n’a pas d’`account_id` réel.
 
@@ -72,7 +85,11 @@ Le workflow enregistre d’abord le point de récupération puis exécute les co
 ```sh
 npx --no-install wrangler d1 time-travel info press-review --config .deployment/wrangler.json --json > "$RUNNER_TEMP/d1-before.json"
 npx --no-install wrangler d1 migrations apply press-review --remote --config .deployment/wrangler.json
-npx --no-install wrangler deploy --config .deployment/wrangler.json
+umask 077
+export DEPLOY_SECRETS_PATH="$RUNNER_TEMP/worker-secrets.json"
+trap 'rm -f "$DEPLOY_SECRETS_PATH"' EXIT
+node -e 'require("fs").writeFileSync(process.env.DEPLOY_SECRETS_PATH, JSON.stringify({TEST_ACCESS_CODE:process.env.TEST_ACCESS_CODE}))'
+npx --no-install wrangler deploy --config .deployment/wrangler.json --secrets-file "$DEPLOY_SECRETS_PATH"
 ```
 
 `.deployment/wrangler.json` contient les identifiants réels injectés localement dans le runner. Après migration et déploiement réussis, `.release/` est transféré comme artefact `deployed-release-<run_id>`. Un job séparé, accordé `contents: write`, promeut exactement cet instantané vers la branche `Production`, en préservant son historique. Il n’exécute pas npm et le token GitHub n’est utilisé qu’à cette étape. Le push de `GITHUB_TOKEN` vers `Production` ne déclenche pas un autre workflow ; la promotion est terminée par ce workflow lui-même.
@@ -84,3 +101,9 @@ En cas d’échec avant le déploiement, la branche `Production` n’est pas mod
 L’accès Cloudflare et les paramètres GitHub requis sont maintenant configurés. Le premier déploiement a confirmé le fonctionnement des permissions de publication Worker et migration D1. Le jeton est limité au compte Cloudflare ciblé et porte les permissions configurées `Workers Scripts Edit`, `D1 Edit` et `Account Settings Read`. Une zone ou un domaine n’est pas requis pour le site initial `workers.dev`.
 
 Le jeton expire le 16 novembre 2027 : le remplacer avant cette date. Créer un nouveau jeton limité au même compte et aux permissions requises, remplacer directement le secret GitHub `CLOUDFLARE_API_TOKEN` sans afficher ni enregistrer le secret sur disque, puis vérifier un déploiement réussi avant de révoquer l’ancien jeton. Ne jamais copier le secret ou les valeurs des variables d’identifiants dans les documents ou journaux.
+
+## Désactivation de l’espace d’essai
+
+Pour fermer l’accès temporaire et désactiver le traitement planifié, remplacer le secret GitHub `TEST_ACCESS_CODE` par la valeur courte non secrète `disabled` (moins de 24 caractères), puis déployer le `Main` courant. Le Worker rejette cette valeur pour l’authentification et n’exécute pas la collecte planifiée. Ne pas supprimer uniquement le secret GitHub : le Worker déjà publié conserverait son secret et le workflow ne pourrait pas déployer sans une valeur non vide. En cas de fermeture urgente, retirer le secret du Worker Cloudflare et définir également `TEST_ACCESS_CODE=disabled` dans GitHub, afin qu’un futur déploiement n’y réintroduise pas l’ancien code.
+
+La désactivation arrête l’authentification et le traitement planifié, sans supprimer les articles, sessions ou compteurs en D1. Le déclencheur Cron reste configuré ; son gestionnaire retourne immédiatement, sans collecte ni purge des sessions ou compteurs expirés. Pour rouvrir l’espace, utiliser un nouveau code fort d’au moins 24 caractères et mettre à jour GitHub, le fichier local `~/.local/share/my-press-review/trial-access-code.txt` et `.dev.vars` sans Git ; ne jamais réutiliser l’ancien code, car les sessions non expirées (huit heures au maximum) y sont liées.

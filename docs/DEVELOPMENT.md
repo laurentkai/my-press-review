@@ -10,7 +10,13 @@ npm run db:migrate:local
 npm run dev
 ```
 
-La migration cible uniquement la base Wrangler locale. Elle crée le schéma initial sans données de démonstration ; l’interface utilise ses propres fixtures fictives. `database_id` à zéro dans `wrangler.jsonc` est un placeholder local, pas un identifiant Cloudflare à utiliser pour déployer.
+La migration cible uniquement la base Wrangler locale. Elle crée le schéma d’identité initial puis le catalogue et les tables de l’espace d’essai privé ; l’interface de démonstration utilise aussi ses propres fixtures fictives. `database_id` à zéro dans `wrangler.jsonc` est un placeholder local, pas un identifiant Cloudflare à utiliser pour déployer.
+
+## Code d’accès temporaire local
+
+L’itération 3 protège l’espace d’essai partagé par le secret `TEST_ACCESS_CODE` (au moins 24 caractères). En local, le code d’accès est conservé dans `~/.local/share/my-press-review/trial-access-code.txt` avec les permissions `0600`; il est également utilisé par le runtime via `.dev.vars`, fichier ignoré par Git. Le propriétaire peut ouvrir le fichier pour copier le code dans le formulaire de connexion. Ne pas publier sa valeur dans les journaux, commandes enregistrées ou fichiers versionnés.
+
+La valeur du code réel n’est pas reproduite ici. La révision de l’itération 3 est publiée sur Cloudflare ; les résultats de collecte locaux et ceux de production doivent rester distincts.
 
 ## Commandes disponibles
 
@@ -55,6 +61,8 @@ npm run db:migrate:local
 
 Il applique la migration uniquement à D1 local. Sur `Main`, le build vérifié est conservé comme artefact puis transmis au job de déploiement ; le job installe les outils avec `npm ci --ignore-scripts` et ne reconstruit pas l’application. Les détails du pipeline, de ses garde-fous et des conditions d’accès sont dans [DELIVERY.md](DELIVERY.md).
 
+Le déploiement de l’espace d’essai exige aussi le secret GitHub `TEST_ACCESS_CODE`. Le workflow le transmet au Worker avec un fichier JSON temporaire protégé (`umask 077`, suppression par `trap`) via Wrangler `--secrets-file` ; la valeur n’est pas intégrée au bundle ni aux fichiers de release. L’export exclut explicitement `.dev.vars`.
+
 Les scripts `package.json` exposent également ces commandes :
 
 | Commande | Fonction et précautions |
@@ -67,6 +75,6 @@ Les scripts `package.json` exposent également ces commandes :
 
 La connexion Cloudflare et le secret/variables GitHub sont configurés ; un premier déploiement manuel a réussi. Les pushes suivants à `Main` déclenchent le même pipeline ; contrôler leur résultat dans GitHub Actions. Les procédures d’activation et de remplacement du jeton avant son expiration sont dans [DELIVERY.md](DELIVERY.md). Ne copiez jamais le token ou les valeurs des variables d’identifiants dans une commande, un fichier suivi par Git ou ces documents.
 
-## Limites du prototype
+## État du prototype
 
-Le site Cloudflare déployé reste une démonstration publique : articles et sources fictifs, ajout et activation/désactivation en mémoire, sans collecte. OAuth, session et IA ne sont pas configurés ; le Cron Trigger est déclaré mais son gestionnaire est sans effet. Voir le [compte rendu de l’itération 1](iterations/0001.md) et celui de l’[activation CI/CD](iterations/0002.md).
+Le code `c2fb5a8` est déployé en production : il fournit un espace d’essai partagé par code, sept flux RSS actifs et deux sources désactivées. Un essai local distinct avait enregistré 166 articles (126 affichés) ; depuis le Worker Cloudflare, une collecte a enregistré 169 articles (129 affichés). OAuth, les comptes individuels, le Super Admin et l’IA restent à implémenter. Voir [Sources](SOURCES.md), le [compte rendu de l’itération 1](iterations/0001.md), celui de l’[activation CI/CD](iterations/0002.md) et celui de l’[itération 3](iterations/0003.md).

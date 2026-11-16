@@ -10,14 +10,19 @@ Réalisés : workflow de vérification PR/Main, artefacts build vérifiés, expo
 
 L’accès Cloudflare et les paramètres GitHub sont configurés ; un premier workflow lancé manuellement sur `Main` a déployé le Worker et promu l’instantané vers `Production`. Les pushes suivants sur `Main` déclenchent le même pipeline ; les exécutions et leur résultat restent traçables dans GitHub Actions.
 
+## Itération 3 — sources et accès d’essai (`c2fb5a8`)
+
+Implémentés et déployés : neuf sources au catalogue, sept flux RSS actifs et deux sources bloquées/désactivées sans flux vérifié ; accès partagé temporaire par code, sessions et API d’essai ; collecte RSS, statuts par source, articles persistés dans les tables `trial_*` et interface de consultation. La production a enregistré 169 articles (129 visibles via l’API) ; les résultats locaux historiques étaient 166/126.
+
+La revue Claude a conclu à l’absence de blocage ou de nouveau défaut démontré ; les remarques mineures ont été corrigées ou circonscrites/documentées. Les contrôles rapportés comprennent 57 tests, check/build/format, actionlint, dry-run avec IDs factices et vérification visuelle desktop/mobile. Le push vers `Main` a ensuite déclenché avec succès le workflow 43942205690, la migration distante 0002, le déploiement et la promotion. Voir le [compte rendu](iterations/0003.md).
+
 ## Suites à planifier — non réalisées
 
-1. Surveiller le résultat des déploiements automatiques et la promotion correspondante à chaque livraison.
-2. Décider admission, compte initial Super Admin, sources, tâches IA et conservation.
-3. Implémenter et tester authentification, sessions et autorisations ; provisionner explicitement les comptes autorisés.
-4. Concevoir puis migrer le modèle personnel des flux, thèmes, sujets, articles et règles.
-5. Ajouter une collecte autorisée avec validation des URL, limites, déduplication et suivi d’état.
-6. Ajouter le traitement IA choisi, ses limites et sa traçabilité.
-7. Connecter l’interface aux données persistées et couvrir les parcours, permissions, erreurs et accessibilité.
+1. Surveiller les états de collecte et la disponibilité des flux en production, sans interpréter une collecte ponctuelle comme une garantie de service.
+2. Définir l’admission, le compte initial Super Admin, les catégories de source confirmées et les conditions d’usage des flux.
+3. Implémenter et tester OAuth, comptes individuels, sessions et permissions ; provisionner explicitement les comptes autorisés et isoler leurs données.
+4. Concevoir puis migrer le modèle personnel des flux, thèmes, sujets, articles et règles ; remplacer le partage d’essai temporaire.
+5. Décider le fournisseur IA, ses tâches, limites, traçabilité et conservation, puis implémenter et tester le traitement.
+6. Compléter favoris, lecture, recherche, notifications, accessibilité et parcours de gestion de données personnelles.
 
-Les suites produit restent à planifier. Aucune connexion OAuth, collecte réelle, IA ou persistance des sources de démonstration n’est disponible. Le token Cloudflare configuré doit être remplacé avant son expiration le 16 novembre 2027 ; voir [DELIVERY.md](DELIVERY.md).
+Les catégories statiques de l’itération 3 ne sont pas un classement IA. Le token Cloudflare configuré doit être remplacé avant son expiration le 16 novembre 2027 ; voir [DELIVERY.md](DELIVERY.md).

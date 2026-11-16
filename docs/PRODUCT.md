@@ -9,7 +9,15 @@
 - Un premier schéma D1 pour utilisateurs, identités OAuth, sessions et sources.
 - Un Cron Trigger configuré toutes les 15 minutes, dont le gestionnaire ne fait volontairement aucun travail.
 
-Ce socle n’est pas une application connectée : il n’y a ni authentification ou session fonctionnelle, ni compte Super Admin, ni collecte, ni traitement IA, ni persistance de la configuration de l’interface.
+Ces éléments décrivent la première itération. L’itération 3 ajoute un espace d’essai partagé protégé par code, des sessions temporaires et une collecte RSS réelle ; cette révision est maintenant publiée sur Cloudflare. Voir [Sources](SOURCES.md), [Authentification](AUTH.md) et [Collecte](INGESTION.md).
+
+## Itération 3 — espace d’essai temporaire déployé
+
+- Neuf sources demandées figurent au catalogue serveur ; sept flux sont actifs en production, tandis que Le Soir et Zonebourse restent bloqués et désactivés après des prétests 403 sans flux vérifié.
+- L’accès temporaire par code est confirmé pour l’essai. Tous les détenteurs du code partagent le même espace et les mêmes données ; il n’y a ni isolation par utilisateur, ni OAuth, ni compte Super Admin.
+- La collecte en production a enregistré 169 articles ; l’API en affichait alors 129 (maximum 20 par source). Les résultats de l’essai local — 166 enregistrés et 126 affichés — restent un relevé distinct.
+- Les catégories du catalogue sont des étiquettes proposées, pas des classifications IA. Aucun traitement IA n’est implémenté.
+- L’itération 3 a été intégrée à `Main`, déployée par le workflow automatique et promue dans `Production`. Le compte rendu [0003](iterations/0003.md) documente la publication et les vérifications navigateur.
 
 ## Cible produit, non livrée
 
