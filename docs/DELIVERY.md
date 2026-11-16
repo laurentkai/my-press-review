@@ -4,7 +4,7 @@
 
 - `Main` est la branche de développement de référence : elle conserve code, documentation, tests, outils et configuration.
 - `Production` est réservée à un export contrôlé des seuls fichiers nécessaires au déploiement ; ne pas y fusionner l’ensemble de `Main`.
-- Le travail de la première itération a été documenté sur la branche `init-all-agents`, révision `6887f3f`, avec `Main` comme destination. Son intégration à `Main` est prévue et autorisée, mais reste à réaliser par le coordinateur ; cette documentation ne change pas de branche et ne réalise ni commit ni fusion.
+- Le travail de la première itération a été documenté sur la branche `init-all-agents`, révision `6887f3f`, avec `Main` comme destination. Le code et la documentation de cette itération ont été intégrés à `Main` localement par avance rapide, après validation. Aucun push ni déploiement n’a été effectué.
 
 ## État de livraison
 
