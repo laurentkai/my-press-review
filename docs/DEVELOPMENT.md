@@ -65,8 +65,8 @@ Les scripts `package.json` exposent également ces commandes :
 
 `release:export` suppose que `npm run build` a déjà produit les entrées attendues. La préparation complète en CI fait l’export, la configuration, puis un dry-run Wrangler avant toute migration distante. La commande de promotion locale n’est pas nécessaire au développement quotidien et requiert un dépôt distant configuré.
 
-Le workflow n’est pas encore connecté à Cloudflare : la connexion du compte utilisateur et la configuration GitHub (secret/variables) restent en attente. Aucun vrai déploiement ne peut donc être effectué à ce stade. Ne mettez jamais un token Cloudflare dans une commande, un fichier suivi par Git ou une variable publique.
+La connexion Cloudflare et le secret/variables GitHub sont configurés ; un premier déploiement manuel a réussi. Les pushes suivants à `Main` déclenchent le même pipeline ; contrôler leur résultat dans GitHub Actions. Les procédures d’activation et de remplacement du jeton avant son expiration sont dans [DELIVERY.md](DELIVERY.md). Ne copiez jamais le token ou les valeurs des variables d’identifiants dans une commande, un fichier suivi par Git ou ces documents.
 
 ## Limites du prototype
 
-Les articles et sources affichés sont fictifs. L’ajout et l’activation/désactivation des sources ne durent que jusqu’au rechargement et ne déclenchent aucune requête de collecte. OAuth, session, IA et déploiement Cloudflare ne sont pas configurés. Le Cron Trigger est déclaré mais son gestionnaire est sans effet. Voir le [compte rendu de l’itération 1](iterations/0001.md) et celui du [socle CI/CD](iterations/0002.md).
+Le site Cloudflare déployé reste une démonstration publique : articles et sources fictifs, ajout et activation/désactivation en mémoire, sans collecte. OAuth, session et IA ne sont pas configurés ; le Cron Trigger est déclaré mais son gestionnaire est sans effet. Voir le [compte rendu de l’itération 1](iterations/0001.md) et celui de l’[activation CI/CD](iterations/0002.md).

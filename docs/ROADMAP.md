@@ -6,13 +6,13 @@ Réalisés : application React/Vite, Worker Hono avec ressources statiques, prem
 
 ## Itération 2 — pipeline CI/CD (révision `125d81a`)
 
-Réalisés : workflow de vérification PR/Main, artefacts build vérifiés, export allowlisté, configuration éphémère, vérifications contre un Main obsolète, bookmark de récupération D1, et étapes de déploiement Cloudflare/promotion séparée vers `Production`. Le pipeline est implémenté, mais aucun déploiement réel n’a été effectué. Sept remarques de la première revue Claude ont été corrigées et aucune n’est bloquante selon la seconde revue. Voir le [compte rendu](iterations/0002.md).
+Réalisés : workflow de vérification PR/Main, artefacts build vérifiés, export allowlisté, configuration éphémère, vérifications contre un Main obsolète, bookmark de récupération D1, déploiement Cloudflare et promotion séparée vers `Production`. Sept remarques de la première revue Claude ont été corrigées et aucune n’est bloquante selon la seconde revue. Voir le [compte rendu](iterations/0002.md).
 
-L’autodéploiement après push à `Main` et la promotion vers `Production` sont autorisés, mais la connexion Cloudflare et les paramètres GitHub requis restent à configurer ; aucun vrai déploiement n’a été effectué. La première validation de permissions et le premier déploiement réel restent donc à faire.
+L’accès Cloudflare et les paramètres GitHub sont configurés ; un premier workflow lancé manuellement sur `Main` a déployé le Worker et promu l’instantané vers `Production`. Les pushes suivants sur `Main` déclenchent le même pipeline ; les exécutions et leur résultat restent traçables dans GitHub Actions.
 
 ## Suites à planifier — non réalisées
 
-1. Connecter le compte Cloudflare et configurer le secret et les variables GitHub ; vérifier les permissions réelles puis exécuter le premier workflow autorisé.
+1. Surveiller le résultat des déploiements automatiques et la promotion correspondante à chaque livraison.
 2. Décider admission, compte initial Super Admin, sources, tâches IA et conservation.
 3. Implémenter et tester authentification, sessions et autorisations ; provisionner explicitement les comptes autorisés.
 4. Concevoir puis migrer le modèle personnel des flux, thèmes, sujets, articles et règles.
@@ -20,4 +20,4 @@ L’autodéploiement après push à `Main` et la promotion vers `Production` son
 6. Ajouter le traitement IA choisi, ses limites et sa traçabilité.
 7. Connecter l’interface aux données persistées et couvrir les parcours, permissions, erreurs et accessibilité.
 
-Les suites produit restent à planifier. L’intégration du code dans le dépôt distant, la configuration Cloudflare/GitHub et le premier déploiement sont distincts : l’automatisation est autorisée, mais l’accès Cloudflare est encore attendu.
+Les suites produit restent à planifier. Aucune connexion OAuth, collecte réelle, IA ou persistance des sources de démonstration n’est disponible. Le token Cloudflare configuré doit être remplacé avant son expiration le 16 novembre 2027 ; voir [DELIVERY.md](DELIVERY.md).

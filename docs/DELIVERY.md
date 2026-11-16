@@ -6,7 +6,17 @@
 - `Production` reçoit uniquement l’instantané de livraison construit depuis le code déployé ; ne pas y fusionner l’ensemble de `Main`.
 - Le déploiement automatique après push à `Main`, puis la promotion de l’instantané vers `Production`, sont autorisés.
 
-Le workflow et les scripts sont présents dans le dépôt, mais l’accès Cloudflare et les paramètres GitHub requis ne sont pas encore configurés. Les validations décrites ici ont été réalisées localement avant le premier push ; aucun déploiement Cloudflare n’a eu lieu. La révision documentée est `125d81a` sur la branche locale `init-all-agents`; elle n’est pas à elle seule une preuve d’intégration distante ou de publication.
+## Première activation réelle — 16 novembre 2026
+
+L’utilisateur s’est connecté via le navigateur Orca et a explicitement autorisé la configuration Cloudflare/GitHub et le déploiement. Le secret `CLOUDFLARE_API_TOKEN` et les variables `CLOUDFLARE_ACCOUNT_ID` et `CLOUDFLARE_D1_DATABASE_ID` sont configurés ; aucune valeur d’identifiant ni aucun jeton ne doit être recopié dans la documentation. Le jeton utilisateur `my-press-review GitHub deployment`, limité au compte Cloudflare Elinaka, était actif après vérification, avec `Workers Scripts Edit`, `D1 Edit` et `Account Settings Read`, et une expiration au 16 novembre 2027. Il a été transféré directement au secret GitHub sans affichage ni stockage sur disque.
+
+La base D1 `press-review` a été créée avec l’indication de localisation `weur`. Cette indication n’est pas une garantie de résidence des données dans l’Union européenne. L’accès initial est le domaine `workers.dev` ; aucun domaine personnalisé ni autre site n’a été modifié.
+
+Le workflow manuel sur `Main` a réussi le 16 novembre 2026 : [exécution 43887904122](https://github.com/laurentkai/my-press-review/actions/runs/43887904122). `verify` a réussi en 27 s, `deploy` en 45 s (dry-run, point de récupération D1, migration distante `0001` et publication), et `promote` en 13 s. Le Worker publié est la version `42df32f1-d5a0-4275-9353-d4e14b3e3789`.
+
+La source est le commit Main distant `ab62f1fe094ecec1bc687e89b4e66652cbb45a1c` ; au moment de la vérification, `Main` local et la branche de travail `init-all-agents` pointaient aussi sur ce commit. Les références locale et distante `Production` sont à `4ef7328`, qui contient l’instantané correspondant ; son arbre ne contient que `migrations/`, `public/`, `release.json`, `worker/` et `wrangler.json`. Le manifeste de release référence la source dans `sourceSha`. Les validations détaillées figurent dans [le compte rendu d’activation](iterations/0002.md).
+
+Ce premier déploiement a été déclenché manuellement avec `workflow_dispatch`. Les pushes suivants sur `Main` exécutent le même pipeline ; vérifier dans [GitHub Actions](https://github.com/laurentkai/my-press-review/actions) le résultat associé au SHA source, puis le manifeste de `Production`.
 
 ## Vérification continue
 
@@ -69,6 +79,8 @@ npx --no-install wrangler deploy --config .deployment/wrangler.json
 
 En cas d’échec avant le déploiement, la branche `Production` n’est pas modifiée ; toutefois, une migration distante peut déjà avoir réussi avant un échec ultérieur de publication du Worker. Si `Main` avance après le déploiement ou si la promotion échoue, l’exécution peut être rouge alors que le service Cloudflare est déjà publié et `Production` encore inchangée. Diagnostiquer cet état puis relancer le workflow sur le `Main` courant ; ne pas relancer l’ancien commit. Après expiration des artefacts, relancer le workflow complet sur `Main` courant.
 
-## Accès à configurer
+## Accès et rotation du jeton
 
-La connexion Cloudflare de l’utilisateur est encore attendue ; aucune permission réelle n’a été vérifiée. Le token Cloudflare ciblé devra disposer de `Workers Scripts Edit`, `D1 Edit` et `Account Read`. Une zone ou un domaine n’est pas requis pour la première cible `workers.dev`. Les permissions effectives seront vérifiées à la première connexion et au premier déploiement autorisé.
+L’accès Cloudflare et les paramètres GitHub requis sont maintenant configurés. Le premier déploiement a confirmé le fonctionnement des permissions de publication Worker et migration D1. Le jeton est limité au compte Cloudflare ciblé et porte les permissions configurées `Workers Scripts Edit`, `D1 Edit` et `Account Settings Read`. Une zone ou un domaine n’est pas requis pour le site initial `workers.dev`.
+
+Le jeton expire le 16 novembre 2027 : le remplacer avant cette date. Créer un nouveau jeton limité au même compte et aux permissions requises, remplacer directement le secret GitHub `CLOUDFLARE_API_TOKEN` sans afficher ni enregistrer le secret sur disque, puis vérifier un déploiement réussi avant de révoquer l’ancien jeton. Ne jamais copier le secret ou les valeurs des variables d’identifiants dans les documents ou journaux.

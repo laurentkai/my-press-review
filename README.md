@@ -1,10 +1,10 @@
 # My Press Review
 
-Socle initial d’une application de revue de presse personnalisée. L’interface de démonstration React/Vite et le Worker Cloudflare fournissent un schéma D1 initial et des routes API de statut, mais pas d’authentification, de collecte ou d’IA. Les contenus et sources de l’interface sont fictifs et leur configuration n’est pas persistée.
+Socle initial d’une application de revue de presse personnalisée, déployé comme démonstration publique sur [workers.dev](https://my-press-review.laurent-kaiser.workers.dev). L’interface React/Vite affiche uniquement des articles fictifs ; elle n’a pas d’authentification, de collecte ni d’IA, et la configuration des sources n’est pas persistée. Ce site public n’est pas une application privée prête à l’emploi.
 
 ## CI/CD et état de déploiement
 
-Le workflow vérifie les pull requests vers `Main` et les commits poussés sur `Main`. Le déploiement automatique après push à `Main` et la promotion contrôlée vers `Production` sont autorisés, mais restent inactifs tant que la connexion Cloudflare et les paramètres GitHub requis ne sont pas configurés. Aucun déploiement Cloudflare n’a encore eu lieu. Les exécutions de vérification sont consultables dans l’onglet Actions du dépôt GitHub. Voir [Branches, pipeline et livraison](docs/DELIVERY.md) et le [compte rendu de l’itération 2](docs/iterations/0002.md).
+Le compte Cloudflare et les paramètres GitHub sont configurés. Le premier déploiement a réussi via un lancement manuel du workflow sur `Main`. Les prochains pushes sur `Main` déclenchent le même pipeline ; leurs résultats sont consultables dans [GitHub Actions](https://github.com/laurentkai/my-press-review/actions). Voir [Branches, pipeline et livraison](docs/DELIVERY.md) et le [compte rendu de l’itération 2](docs/iterations/0002.md).
 
 ## Développer
 
