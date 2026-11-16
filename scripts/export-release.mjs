@@ -128,7 +128,7 @@ export async function exportRelease({ root, output, sourceSha }) {
     throw new Error("Unsupported database configuration.");
   for (const file of await walk(join(root, "dist/my_press_review"))) {
     if (
-      !["index.js", "index.js.map", "wrangler.json"].includes(
+      !["index.js", "index.js.map", "wrangler.json", ".dev.vars"].includes(
         relative(join(root, "dist/my_press_review"), file),
       )
     )

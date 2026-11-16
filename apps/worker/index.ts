@@ -1,9 +1,18 @@
 import { Hono } from "hono";
 import { secureHeaders } from "hono/secure-headers";
+import {
+  trialAuthenticated,
+  loginTrial,
+  logoutTrial,
+  sameOrigin,
+} from "./auth";
+import { workspace, toggleSource, refreshSource } from "./trial";
+import { scheduledCollection } from "./feeds/collector";
 
 export interface Bindings {
   DB: D1Database;
   ASSETS: Fetcher;
+  TEST_ACCESS_CODE?: string;
 }
 
 export const app = new Hono<{ Bindings: Bindings }>();
@@ -14,8 +23,20 @@ app.use("/api/*", async (c, next) => {
   // private by default, even if a future handler is registered below.
   const publicGet =
     c.req.method === "GET" &&
-    ["/api/health", "/api/auth/providers"].includes(c.req.path);
-  if (!publicGet && !c.req.path.startsWith("/api/auth/")) {
+    ["/api/health", "/api/auth/providers", "/api/trial/session"].includes(
+      c.req.path,
+    );
+  const login = c.req.path === "/api/trial/login" && c.req.method === "POST";
+  const trialRoute =
+    c.req.path === "/api/trial/workspace" ||
+    c.req.path === "/api/trial/logout" ||
+    /^\/api\/trial\/sources\/[a-z0-9]+(?:\/refresh)?$/.test(c.req.path);
+  if (trialRoute && (await trialAuthenticated(c))) {
+    if (!["GET", "HEAD"].includes(c.req.method) && !sameOrigin(c))
+      return c.json({ error: "ORIGIN_REFUSED" }, 403);
+    return next();
+  }
+  if (!publicGet && !login && !c.req.path.startsWith("/api/auth/")) {
     return c.json({ error: "UNAUTHENTICATED" }, 401);
   }
   await next();
@@ -29,6 +50,17 @@ app.get("/api/auth/providers", (c) =>
     ],
   }),
 );
+app.get("/api/trial/session", async (c) =>
+  c.json({
+    authenticated: await trialAuthenticated(c),
+    available: !!c.env?.TEST_ACCESS_CODE && c.env.TEST_ACCESS_CODE.length >= 24,
+  }),
+);
+app.post("/api/trial/login", loginTrial);
+app.post("/api/trial/logout", logoutTrial);
+app.get("/api/trial/workspace", workspace);
+app.put("/api/trial/sources/:id", toggleSource);
+app.post("/api/trial/sources/:id/refresh", refreshSource);
 app.all("/api/auth/*", (c) =>
   c.json(
     {
@@ -44,11 +76,12 @@ app.notFound((c) => c.json({ error: "NOT_FOUND" }, 404));
 
 export default {
   fetch: app.fetch,
-  // The trigger is wired, but intentionally does not collect or call AI yet.
-  // This prevents external work before sources, credentials and access policies exist.
   async scheduled(
     _event: ScheduledController,
-    _env: Bindings,
+    env: Bindings,
     _ctx: ExecutionContext,
-  ): Promise<void> {},
+  ): Promise<void> {
+    if (env.TEST_ACCESS_CODE && env.TEST_ACCESS_CODE.length >= 24)
+      await scheduledCollection(env.DB);
+  },
 } satisfies ExportedHandler<Bindings>;

@@ -48,6 +48,7 @@ async function fixture() {
     "dist/client/index.html": '<html lang="fr"></html>',
     "dist/client/_headers": "/*\n X-Frame-Options: DENY",
     "dist/client/assets/main-test.js": 'console.log("demo")',
+    "dist/my_press_review/.dev.vars": "TEST_ACCESS_CODE=fixture-not-exported",
     "dist/my_press_review/index.js":
       'export default { fetch: () => new Response("ok") }',
     "dist/my_press_review/wrangler.json": JSON.stringify({

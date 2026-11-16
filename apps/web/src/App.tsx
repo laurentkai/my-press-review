@@ -22,6 +22,7 @@ import type {
   WorkspaceSection,
 } from "../../../packages/shared/types";
 import { demoArticles, demoSources, filterArticles, parseSource } from "./demo";
+import { TrialLogin, PrivateWorkspace } from "./Trial";
 
 const themes = ["Tous les thèmes", "Politique", "Environnement", "Technologie"];
 const formatDate = (value: string) =>
@@ -226,7 +227,23 @@ function SourcesPanel({
 }
 
 export function App() {
+  const [privateMode, setPrivateMode] = useState(false);
   const [section, setSection] = useState<WorkspaceSection>("edition");
+  useEffect(() => {
+    const abort = new AbortController();
+    fetch("/api/trial/session", { signal: abort.signal })
+      .then((response) =>
+        response.ok
+          ? (response.json() as Promise<{ authenticated?: boolean }>)
+          : null,
+      )
+      .then((data) => {
+        if (!abort.signal.aborted && data?.authenticated === true)
+          setPrivateMode(true);
+      })
+      .catch(() => {});
+    return () => abort.abort();
+  }, []);
   const [theme, setTheme] = useState("Tous les thèmes");
   const [subject, setSubject] = useState("Tous les sujets");
   const [query, setQuery] = useState("");
@@ -294,6 +311,16 @@ export function App() {
     setLogin(true);
   }
 
+  if (privateMode)
+    return (
+      <PrivateWorkspace
+        onExit={() => {
+          setPrivateMode(false);
+          setLogin(true);
+          setSelected(null);
+        }}
+      />
+    );
   return (
     <div className="app-shell">
       <a href="#main-content" className="skip-link">
@@ -405,7 +432,7 @@ export function App() {
           <div className="demo-banner">
             <span>
               <span className="demo-dot" /> Démonstration · contenus fictifs,
-              aucune actualité collectée
+              aucun contenu réel affiché ici
             </span>
             <button onClick={openLogin}>
               Connexion privée <ArrowRight size={14} />
@@ -424,6 +451,7 @@ export function App() {
                 Vos médias, vos thèmes et votre sélection dans un espace
                 personnel.
               </p>
+              <TrialLogin onSuccess={() => setPrivateMode(true)} />
               <div className="login-options">
                 <button className="provider-button" disabled>
                   Continuer avec Microsoft / Hotmail
@@ -436,7 +464,7 @@ export function App() {
                 {authState === "loading"
                   ? "Vérification de la configuration…"
                   : authState === "error"
-                    ? "Le service de connexion est indisponible. Aucun accès privé n’est ouvert."
+                    ? "Les fournisseurs OAuth sont indisponibles. L’accès de test par code est distinct."
                     : "La connexion sera disponible après configuration des fournisseurs OAuth. Aucun compte n’est créé dans cette version."}
               </p>
               <button className="text-button" onClick={() => setLogin(false)}>
@@ -466,8 +494,8 @@ export function App() {
                   <Clock3 size={20} />
                   <h3>Collecte planifiée</h3>
                   <p>
-                    Cadence prévue : toutes les 15 minutes. Collecte non
-                    activée.
+                    Cadence cible : toutes les 15 minutes par flux. Résultats
+                    disponibles dans l’espace test privé.
                   </p>
                 </div>
                 <div>

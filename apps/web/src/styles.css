@@ -1286,3 +1286,125 @@ h1 > span {
   min-height: 44px;
   text-align: left;
 }
+
+.trial-login {
+  margin: 24px 0;
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  text-align: left;
+}
+.trial-login h2 {
+  font-family: Georgia, serif;
+  font-size: 24px;
+  font-weight: 400;
+}
+.trial-login p {
+  color: var(--secondary);
+  line-height: 1.7;
+  font-size: 12px;
+  margin: 12px 0 20px;
+}
+.trial-login label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 12px;
+}
+.trial-login input {
+  min-height: 44px;
+  padding: 12px;
+  width: 100%;
+  background: var(--control);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  color: var(--ink);
+}
+.trial-login button {
+  margin-top: 16px;
+}
+.trial-source-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+  margin-top: 24px;
+}
+.trial-source {
+  padding: 24px;
+  border: 1px solid var(--line);
+  background: var(--sheet);
+  border-radius: 4px;
+}
+.source-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.source-title h2 {
+  font-family: Georgia, serif;
+  font-size: 25px;
+  font-weight: 400;
+}
+.source-title a {
+  text-decoration: none;
+}
+.source-title span {
+  font-size: 11px;
+  color: var(--secondary);
+}
+.collection-status {
+  color: var(--forest);
+  font-size: 12px;
+  margin-top: 20px;
+}
+.collection-status.warning {
+  color: var(--accent);
+}
+.trial-source dl {
+  font-size: 11px;
+  line-height: 1.8;
+  margin: 20px 0 0;
+}
+.trial-source dl > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+.trial-source dt {
+  color: var(--secondary);
+}
+.trial-source dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+.trial-source .toggle-button {
+  margin-top: 20px;
+}
+.trial-selection-count {
+  color: var(--secondary);
+  font-size: 11px;
+  margin-bottom: 24px;
+}
+.trial-grid .headline-button {
+  text-decoration: none;
+}
+.trial-grid .headline-button:hover {
+  text-decoration: underline;
+}
+.trial-grid .article-bottom {
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.trial-grid .article-date {
+  line-height: 1.7;
+}
+@media (max-width: 760px) {
+  .trial-source-list {
+    grid-template-columns: 1fr;
+  }
+  .trial-login {
+    padding: 20px;
+  }
+}
