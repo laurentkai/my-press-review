@@ -592,7 +592,7 @@ h1 > span {
   font-size: 10px;
   margin-bottom: 8px;
 }
-.article-card h3 {
+.article-card h2 {
   font-family: Georgia, "Times New Roman", serif;
   font-size: 23px;
   line-height: 1.2;
@@ -600,7 +600,7 @@ h1 > span {
   letter-spacing: -0.4px;
   margin-bottom: 12px;
 }
-.article-card.lead h3 {
+.article-card.lead h2 {
   font-size: 35px;
   max-width: 560px;
   letter-spacing: -0.9px;
@@ -721,7 +721,7 @@ h1 > span {
   gap: 24px;
   padding: 44px 0 24px;
 }
-.section-heading h2 {
+.section-heading h1 {
   font-family: Georgia, serif;
   font-size: 36px;
   font-weight: 400;
@@ -812,7 +812,7 @@ h1 > span {
   flex: 1;
   min-width: 0;
 }
-.source-info h3 {
+.source-info h2 {
   font-size: 14px;
   font-weight: 500;
 }
@@ -1051,7 +1051,7 @@ h1 > span {
   .edition-heading h1 {
     font-size: 38px;
   }
-  .article-card.lead h3 {
+  .article-card.lead h2 {
     font-size: 32px;
   }
   .theme-tabs {
@@ -1163,10 +1163,10 @@ h1 > span {
   .article-grid {
     gap: 28px 20px;
   }
-  .article-card h3 {
+  .article-card h2 {
     font-size: 22px;
   }
-  .article-card.lead h3 {
+  .article-card.lead h2 {
     font-size: 30px;
   }
   .editorial-art {
@@ -1201,7 +1201,7 @@ h1 > span {
     gap: 20px;
     padding-top: 32px;
   }
-  .section-heading h2 {
+  .section-heading h1 {
     font-size: 32px;
   }
   .source-row {
@@ -1210,7 +1210,7 @@ h1 > span {
   .source-avatar {
     display: none;
   }
-  .source-info h3 {
+  .source-info h2 {
     font-size: 12px;
   }
   .source-info p {
@@ -1258,13 +1258,13 @@ h1 > span {
   .demo-banner button {
     padding: 0;
   }
-  .article-card h3 {
+  .article-card h2 {
     font-size: 26px;
   }
   .edition-heading h1 {
     font-size: 34px;
   }
-  .article-card.lead h3 {
+  .article-card.lead h2 {
     font-size: 28px;
   }
 }
@@ -1278,4 +1278,11 @@ h1 > span {
   button:active:not(:disabled) {
     transform: none;
   }
+}
+
+.brand {
+  border: 0;
+  background: transparent;
+  min-height: 44px;
+  text-align: left;
 }

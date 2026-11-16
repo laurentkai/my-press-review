@@ -64,11 +64,15 @@ function ArticleCard({
         </div>
       )}
       <p className="subject-label">{article.subject}</p>
-      <h3>
-        <button className="headline-button" onClick={onOpen}>
+      <h2>
+        <button
+          id={`article-${article.id}`}
+          className="headline-button"
+          onClick={onOpen}
+        >
           {article.title}
         </button>
-      </h3>
+      </h2>
       <p className="article-excerpt">{article.excerpt}</p>
       <div className="article-bottom">
         <span className="source-name">
@@ -109,7 +113,9 @@ function SourcesPanel({
       <div className="section-heading">
         <div>
           <p className="eyebrow">VOTRE SÉLECTION</p>
-          <h2 id="sources-title">Mes sources</h2>
+          <h1 id="sources-title" tabIndex={-1}>
+            Mes sources
+          </h1>
           <p className="muted">Les perspectives qui composent votre revue.</p>
         </div>
         <button
@@ -194,7 +200,7 @@ function SourcesPanel({
               <Globe2 size={20} />
             </span>
             <div className="source-info">
-              <h3>{source.name}</h3>
+              <h2>{source.name}</h2>
               <p>{source.url}</p>
             </div>
             <button
@@ -230,7 +236,12 @@ export function App() {
   const [authState, setAuthState] = useState<"loading" | "disabled" | "error">(
     "loading",
   );
-  const headingRef = useRef<HTMLHeadingElement>(null);
+  const mainRef = useRef<HTMLElement>(null);
+  const previousView = useRef({
+    section,
+    articleId: null as string | null,
+    login,
+  });
   useEffect(() => {
     if (!login) return;
     const abort = new AbortController();
@@ -247,8 +258,23 @@ export function App() {
     return () => abort.abort();
   }, [login]);
   useEffect(() => {
-    if (selected) headingRef.current?.focus();
-  }, [selected]);
+    const previous = previousView.current;
+    const articleId = selected?.id ?? null;
+    if (
+      previous.section === section &&
+      previous.articleId === articleId &&
+      previous.login === login
+    )
+      return;
+    const returnTarget =
+      previous.articleId && !selected && !login && section === "edition"
+        ? document.getElementById(`article-${previous.articleId}`)
+        : null;
+    (
+      returnTarget ?? mainRef.current?.querySelector<HTMLHeadingElement>("h1")
+    )?.focus();
+    previousView.current = { section, articleId, login };
+  }, [section, selected, login]);
   const visible = filterArticles(demoArticles, sources, theme, subject, query);
   const subjects = [
     ...new Set(
@@ -263,20 +289,30 @@ export function App() {
     setLogin(false);
   }
 
+  function openLogin() {
+    setSelected(null);
+    setLogin(true);
+  }
+
   return (
     <div className="app-shell">
       <a href="#main-content" className="skip-link">
         Aller au contenu
       </a>
       <aside className="sidebar" aria-label="Navigation principale">
-        <a href="/" className="brand" aria-label="La Revue — accueil">
+        <button
+          type="button"
+          className="brand"
+          aria-label="La Revue — accueil"
+          onClick={() => navigate("edition")}
+        >
           <span className="brand-icon">
             <Newspaper size={24} />
           </span>
           <span>
             la revue<span className="brand-dot">.</span>
           </span>
-        </a>
+        </button>
         <p className="brand-baseline">L’actualité, à votre mesure.</p>
         <div className="workspace-badge">
           <span className="workspace-monogram">LR</span>
@@ -340,13 +376,7 @@ export function App() {
           <div className="private-label">
             <LockKeyhole size={14} /> Un espace privé, pour vous
           </div>
-          <button
-            className="profile-button"
-            onClick={() => {
-              setLogin(true);
-              setSelected(null);
-            }}
-          >
+          <button className="profile-button" onClick={openLogin}>
             <span className="profile-avatar">?</span>
             <span>
               <strong>Se connecter</strong>
@@ -371,13 +401,13 @@ export function App() {
           </span>
           <span className="edition-tag">ÉDITION DÉCOUVERTE</span>
         </header>
-        <main id="main-content" tabIndex={-1}>
+        <main id="main-content" tabIndex={-1} ref={mainRef}>
           <div className="demo-banner">
             <span>
               <span className="demo-dot" /> Démonstration · contenus fictifs,
               aucune actualité collectée
             </span>
-            <button onClick={() => setLogin(true)}>
+            <button onClick={openLogin}>
               Connexion privée <ArrowRight size={14} />
             </button>
           </div>
@@ -387,7 +417,9 @@ export function App() {
                 <LockKeyhole size={28} />
               </span>
               <p className="eyebrow">VOTRE REVUE, VOTRE ESPACE</p>
-              <h1 id="login-title">Retrouvez vos perspectives.</h1>
+              <h1 id="login-title" tabIndex={-1}>
+                Retrouvez vos perspectives.
+              </h1>
               <p>
                 Vos médias, vos thèmes et votre sélection dans un espace
                 personnel.
@@ -416,7 +448,7 @@ export function App() {
           ) : section === "settings" ? (
             <section className="settings-panel">
               <p className="eyebrow">CONFIGURATION GLOBALE</p>
-              <h1>Administration</h1>
+              <h1 tabIndex={-1}>Administration</h1>
               <div className="locked-panel">
                 <LockKeyhole size={28} />
                 <h2>Un accès réservé au Super Admin.</h2>
@@ -425,10 +457,7 @@ export function App() {
                   des paramètres IA sera accessible après authentification et
                   vérification du rôle côté serveur.
                 </p>
-                <button
-                  className="primary-button"
-                  onClick={() => setLogin(true)}
-                >
+                <button className="primary-button" onClick={openLogin}>
                   Voir la connexion <ArrowRight size={16} />
                 </button>
               </div>
@@ -458,9 +487,7 @@ export function App() {
               <p className="eyebrow">
                 {selected.theme} / {selected.subject}
               </p>
-              <h1 ref={headingRef} tabIndex={-1}>
-                {selected.title}
-              </h1>
+              <h1 tabIndex={-1}>{selected.title}</h1>
               <div className="reading-meta">
                 <span>
                   {sources.find((s) => s.id === selected.sourceId)?.name}
@@ -486,7 +513,7 @@ export function App() {
               <section className="edition-heading">
                 <div>
                   <p className="eyebrow">PRENDRE LE TEMPS DE COMPRENDRE</p>
-                  <h1>
+                  <h1 tabIndex={-1}>
                     Votre regard sur l’actualité<span>.</span>
                   </h1>
                   <p className="edition-description">

@@ -17,6 +17,7 @@ describe("API boundary before OAuth configuration", () => {
     "/api/themes",
     "/api/subjects",
     "/api/admin/users",
+    "/api/future-private-resource",
   ])(
     "denies anonymous reads and writes to %s even with forged cookies",
     async (path) => {
@@ -42,9 +43,9 @@ describe("API boundary before OAuth configuration", () => {
       true,
     );
   });
-  it("never serves the SPA for an unknown API route", async () => {
+  it("denies unrecognized API routes by default without serving the SPA", async () => {
     const response = await app.request("/api/missing");
-    expect(response.status).toBe(404);
+    expect(response.status).toBe(401);
     expect(response.headers.get("content-type")).toContain("application/json");
   });
 });

@@ -1,5 +1,6 @@
 import React from "react";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+afterEach(() => vi.unstubAllGlobals());
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { App } from "../apps/web/src/App";
@@ -39,6 +40,11 @@ describe("demo journeys", () => {
     ).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Retour à ma revue" }));
     expect(screen.getAllByRole("article")).toHaveLength(1);
+    expect(
+      screen.getByRole("button", {
+        name: "Le regard des territoires sur la campagne",
+      }),
+    ).toHaveFocus();
   });
   it("adds and disables a source in memory without making a request", async () => {
     const user = userEvent.setup();
@@ -57,14 +63,23 @@ describe("demo journeys", () => {
     );
     await user.click(screen.getByRole("button", { name: "Ajouter à la démo" }));
     expect(screen.getByText("Mon média")).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Aucun article ne sera téléchargé",
+    );
+
+    await user.click(
+      screen.getByRole("button", { name: "La Revue — accueil" }),
+    );
+    expect(screen.getByRole("heading", { level: 1 })).toHaveFocus();
+    await user.click(screen.getByRole("button", { name: "Mes sources" }));
+    expect(
+      screen.getByRole("heading", { level: 1, name: "Mes sources" }),
+    ).toHaveFocus();
     const toggle = screen.getByRole("button", { name: "Désactiver Mon média" });
     await user.click(toggle);
     expect(
       screen.getByRole("button", { name: "Activer Mon média" }),
     ).toHaveAttribute("aria-pressed", "false");
-    expect(screen.getByRole("status")).toHaveTextContent(
-      "Aucun article ne sera téléchargé",
-    );
   });
   it("displays an empty result and resets the search", async () => {
     const user = userEvent.setup();
@@ -92,5 +107,37 @@ describe("demo journeys", () => {
       within(main).getByText("Un accès réservé au Super Admin."),
     ).toBeInTheDocument();
     expect(within(main).queryByRole("textbox")).not.toBeInTheDocument();
+  });
+  it("returns from the login banner to the edition without a stale article", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValue(
+          new Response(JSON.stringify({ providers: [] }), { status: 200 }),
+        ),
+    );
+    const user = userEvent.setup();
+    render(<App />);
+    await user.click(
+      screen.getByRole("button", {
+        name: "Présidentielle : les idées au cœur du débat",
+      }),
+    );
+    await user.click(screen.getByRole("button", { name: "Connexion privée" }));
+    expect(
+      screen.getByRole("heading", {
+        level: 1,
+        name: "Retrouvez vos perspectives.",
+      }),
+    ).toHaveFocus();
+    expect(
+      screen.getByRole("button", { name: "Continuer avec Apple" }),
+    ).toBeDisabled();
+    await user.click(
+      screen.getByRole("button", { name: "Retour à la démonstration" }),
+    );
+    expect(screen.getAllByRole("article")).toHaveLength(6);
+    expect(screen.getByRole("heading", { level: 1 })).toHaveFocus();
   });
 });
