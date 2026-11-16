@@ -2451,6 +2451,449 @@ function isSourceUrl(value, source) {
 		return false;
 	}
 }
+// packages/shared/topics.ts
+var topics = [
+	{
+		name: "Politique",
+		subtopics: [
+			"Présidentielle",
+			"Élections",
+			"Institutions"
+		]
+	},
+	{
+		name: "International",
+		subtopics: ["Diplomatie", "Conflits"]
+	},
+	{
+		name: "Économie",
+		subtopics: [
+			"Marchés",
+			"Entreprises",
+			"Emploi"
+		]
+	},
+	{
+		name: "Société",
+		subtopics: ["Justice", "Éducation"]
+	},
+	{
+		name: "Sport",
+		subtopics: [
+			"Football",
+			"Tennis",
+			"Cyclisme"
+		]
+	},
+	{
+		name: "Culture",
+		subtopics: [
+			"Cinéma",
+			"Musique",
+			"Littérature"
+		]
+	},
+	{
+		name: "Sciences et technologies",
+		subtopics: ["Technologie", "Sciences"]
+	},
+	{
+		name: "Environnement",
+		subtopics: [
+			"Climat",
+			"Biodiversité",
+			"Énergie"
+		]
+	},
+	{
+		name: "Santé",
+		subtopics: ["Médecine", "Santé publique"]
+	},
+	{
+		name: "Autres",
+		subtopics: []
+	}
+];
+// apps/worker/feeds/classify.ts
+var rules = [
+	{
+		theme: "Politique",
+		subtheme: "Présidentielle",
+		keywords: ["presidentielle", "presidentielles"]
+	},
+	{
+		theme: "Politique",
+		subtheme: "Élections",
+		keywords: [
+			"election",
+			"elections",
+			"electoral",
+			"electorale",
+			"legislatives",
+			"scrutin"
+		]
+	},
+	{
+		theme: "Politique",
+		subtheme: "Institutions",
+		keywords: [
+			"parlement",
+			"gouvernement",
+			"constitution",
+			"assemblee nationale",
+			"senat",
+			"premier ministre"
+		]
+	},
+	{
+		theme: "International",
+		subtheme: "Diplomatie",
+		keywords: [
+			"diplomatie",
+			"diplomatique",
+			"ambassade",
+			"onu"
+		]
+	},
+	{
+		theme: "International",
+		subtheme: "Conflits",
+		keywords: [
+			"guerre",
+			"cessez le feu",
+			"conflit arme",
+			"bombardement",
+			"bombardements"
+		]
+	},
+	{
+		theme: "Économie",
+		subtheme: "Marchés",
+		keywords: [
+			"bourse",
+			"bourses",
+			"boursier",
+			"boursiere",
+			"cac 40",
+			"wall street",
+			"nasdaq",
+			"marches financiers",
+			"stock market"
+		]
+	},
+	{
+		theme: "Économie",
+		subtheme: "Entreprises",
+		keywords: [
+			"entreprise",
+			"entreprises",
+			"fusion acquisition",
+			"chiffre d affaires"
+		]
+	},
+	{
+		theme: "Économie",
+		subtheme: "Emploi",
+		keywords: [
+			"emploi",
+			"chomage",
+			"recrutement",
+			"licenciements"
+		]
+	},
+	{
+		theme: "Société",
+		subtheme: "Justice",
+		keywords: [
+			"justice",
+			"tribunal",
+			"proces",
+			"judiciaire"
+		]
+	},
+	{
+		theme: "Société",
+		subtheme: "Éducation",
+		keywords: [
+			"education",
+			"enseignement",
+			"ecole",
+			"universite"
+		]
+	},
+	{
+		theme: "Sport",
+		subtheme: "Football",
+		keywords: [
+			"football",
+			"foot",
+			"ligue 1",
+			"ligue des champions",
+			"diables rouges",
+			"jupiler pro league"
+		]
+	},
+	{
+		theme: "Sport",
+		subtheme: "Tennis",
+		keywords: [
+			"tennis",
+			"roland garros",
+			"wimbledon"
+		]
+	},
+	{
+		theme: "Sport",
+		subtheme: "Cyclisme",
+		keywords: [
+			"cyclisme",
+			"tour de france",
+			"velo",
+			"peloton"
+		]
+	},
+	{
+		theme: "Culture",
+		subtheme: "Cinéma",
+		keywords: [
+			"cinema",
+			"film",
+			"films",
+			"cineaste"
+		]
+	},
+	{
+		theme: "Culture",
+		subtheme: "Musique",
+		keywords: [
+			"musique",
+			"concert",
+			"album",
+			"chanteur",
+			"chanteuse"
+		]
+	},
+	{
+		theme: "Culture",
+		subtheme: "Littérature",
+		keywords: [
+			"litterature",
+			"romancier",
+			"prix goncourt"
+		]
+	},
+	{
+		theme: "Sciences et technologies",
+		subtheme: "Technologie",
+		keywords: [
+			"technologie",
+			"technologies",
+			"tech",
+			"high tech",
+			"intelligence artificielle",
+			"ia",
+			"smartphone",
+			"cybersecurite",
+			"logiciel"
+		]
+	},
+	{
+		theme: "Sciences et technologies",
+		subtheme: "Sciences",
+		keywords: [
+			"science",
+			"sciences",
+			"spatial",
+			"astronomie",
+			"nasa",
+			"physique quantique"
+		]
+	},
+	{
+		theme: "Environnement",
+		subtheme: "Climat",
+		keywords: [
+			"climat",
+			"climatique",
+			"rechauffement",
+			"emissions de co2"
+		]
+	},
+	{
+		theme: "Environnement",
+		subtheme: "Biodiversité",
+		keywords: [
+			"biodiversite",
+			"especes menacees",
+			"deforestation"
+		]
+	},
+	{
+		theme: "Environnement",
+		subtheme: "Énergie",
+		keywords: [
+			"energies renouvelables",
+			"eolien",
+			"transition energetique"
+		]
+	},
+	{
+		theme: "Santé",
+		subtheme: "Médecine",
+		keywords: [
+			"medecine",
+			"cancer",
+			"vaccin",
+			"vaccins",
+			"hopital",
+			"traitement medical"
+		]
+	},
+	{
+		theme: "Santé",
+		subtheme: "Santé publique",
+		keywords: [
+			"sante publique",
+			"epidemie",
+			"pandemie"
+		]
+	}
+];
+var metadataAliases = [
+	{
+		theme: "International",
+		subtheme: null,
+		keywords: ["monde", "international"]
+	},
+	{
+		theme: "Sport",
+		subtheme: null,
+		keywords: ["sports"]
+	},
+	{
+		theme: "Sport",
+		subtheme: "Football",
+		keywords: ["diables rouges"]
+	},
+	{
+		theme: "Société",
+		subtheme: "Justice",
+		keywords: ["faits divers", "justice"]
+	},
+	{
+		theme: "Société",
+		subtheme: null,
+		keywords: ["transports", "mobilite"]
+	},
+	{
+		theme: "Culture",
+		subtheme: null,
+		keywords: ["people", "medias"]
+	},
+	{
+		theme: "Économie",
+		subtheme: null,
+		keywords: [
+			"conjoncture",
+			"finance",
+			"economy",
+			"economic indicators",
+			"economic news"
+		]
+	},
+	{
+		theme: "Économie",
+		subtheme: "Marchés",
+		keywords: [
+			"markets",
+			"stock market news",
+			"marches"
+		]
+	},
+	{
+		theme: "Sciences et technologies",
+		subtheme: "Technologie",
+		keywords: ["tech web"]
+	}
+];
+function normalize(value) {
+	return value.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+}
+function contains(text, keyword) {
+	return ` ${text} `.includes(` ${keyword} `);
+}
+function pathSections(value) {
+	try {
+		return new URL(value).pathname.split("/").filter(Boolean).slice(0, -1).map((part) => normalize(decodeURIComponent(part)));
+	} catch {
+		return [];
+	}
+}
+var compiledTopics = topics.filter((topic) => topic.name !== "Autres").map((topic) => ({
+	name: topic.name,
+	normalized: normalize(topic.name),
+	aliases: metadataAliases.filter((rule) => rule.theme === topic.name).map((rule) => ({
+		...rule,
+		keywords: rule.keywords.map(normalize)
+	})),
+	rules: rules.filter((rule) => rule.theme === topic.name).map((rule) => ({
+		...rule,
+		keywords: rule.keywords.map(normalize)
+	}))
+}));
+function classifyArticle(input, sourceId) {
+	const categories = (input.categories ?? []).map(normalize);
+	const sections = pathSections(input.url);
+	const title = normalize(input.title);
+	const excerpt = normalize(input.excerpt);
+	let best;
+	let bestScore = 0;
+	for (const topic of compiledTopics) {
+		const theme = topic.normalized;
+		const topicRules = topic.rules;
+		const categoryTheme = categories.some((value) => contains(value, theme));
+		const sectionTheme = sections.some((value) => value === theme);
+		let score = (categoryTheme ? 100 : 0) + (sectionTheme ? 60 : 0) + (theme !== "culture" && contains(title, theme) ? 4 : 0) + (theme !== "culture" && contains(excerpt, theme) ? 1 : 0);
+		let subtheme = null;
+		let bestSubScore = 0;
+		for (const alias of topic.aliases) {
+			const aliasScore = (categories.some((value) => alias.keywords.some((keyword) => contains(value, keyword))) ? 100 : 0) + (sections.some((value) => alias.keywords.some((keyword) => contains(value, keyword))) ? 60 : 0);
+			score += aliasScore;
+			if (alias.subtheme !== null && aliasScore > bestSubScore) {
+				bestSubScore = aliasScore;
+				subtheme = alias.subtheme;
+			}
+		}
+		for (const rule of topicRules) {
+			const ruleScore = rule.keywords.reduce((sum, keyword) => sum + (categories.some((value) => contains(value, keyword)) ? 100 : 0) + (sections.some((value) => contains(value, keyword)) ? 60 : 0) + (contains(title, keyword) ? 4 : 0) + (contains(excerpt, keyword) ? 1 : 0), 0);
+			score += ruleScore;
+			if (ruleScore > bestSubScore) {
+				bestSubScore = ruleScore;
+				subtheme = rule.subtheme;
+			}
+		}
+		if (score > bestScore) {
+			bestScore = score;
+			best = {
+				theme: topic.name,
+				subtheme
+			};
+		}
+	}
+	if (best) return best;
+	if (sourceId === "investing" || sourceId === "zonebourse") return {
+		theme: "Économie",
+		subtheme: "Marchés"
+	};
+	if (sourceId === "gouvernement") return {
+		theme: "Politique",
+		subtheme: "Institutions"
+	};
+	return {
+		theme: "Autres",
+		subtheme: null
+	};
+}
 // node_modules/xmlchars/xml/1.0/ed5.js
 var require_ed5 = /* @__PURE__ */ __commonJSMin(((exports) => {
 	/**
@@ -4755,8 +5198,25 @@ function decodeHtmlText(input, mode) {
 function decodeHTML(htmlString, mode = DecodingMode.Legacy) {
 	return decodeHtmlText(htmlString, mode);
 }
-// apps/worker/feeds/parser.ts
+// apps/worker/feeds/images.ts
 var import_saxes = require_saxes();
+var imageHosts = {
+	"7sur7": ["images.7sur7.be"],
+	dh: ["www.dhnet.be"],
+	lalibre: ["www.lalibre.be"],
+	figaro: ["i.f1g.fr"],
+	investing: ["content-media.investing.com"]
+};
+function imageUrl(value, source) {
+	if (!value.trim()) return null;
+	try {
+		const url = new URL(value.trim(), source.feed ?? source.url);
+		return url.protocol === "https:" && !url.username && !url.password && !url.port && !url.hash && url.href.length <= 2048 && (imageHosts[source.id] ?? []).includes(url.hostname) ? url.href : null;
+	} catch {
+		return null;
+	}
+}
+// apps/worker/feeds/parser.ts
 var FeedError = class extends Error {
 	status;
 	constructor(status) {
@@ -4766,6 +5226,9 @@ var FeedError = class extends Error {
 };
 function plainText(value, max) {
 	return decodeHTML(value).replace(/<(script|style)\b[^>]*>[\s\S]*?<\/\1\s*>/gi, " ").replace(/<[^>]*>/g, " ").replace(/[\u0000-\u001f\u007f]/g, " ").replace(/\s+/g, " ").trim().slice(0, max);
+}
+function readingText(value) {
+	return decodeHTML(value).replace(/<(script|style|iframe|svg)\b[^>]*>[\s\S]*?<\/\1\s*>/gi, " ").replace(/<br\s*\/?\s*>|<\/(?:p|div|li|h[1-6])\s*>/gi, "\n\n").replace(/<[^>]*>/g, " ").replace(/[\u0000-\u0008\u000b-\u001f\u007f]/g, " ").split(/\n+/).map((line) => line.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n\n").slice(0, 2e3);
 }
 function publicationDate(value, now = Date.now()) {
 	if (!/(?:Z|[+-]\d{2}:?\d{2}|\bGMT|\bUTC|\bUT)$/i.test(value.trim())) return null;
@@ -4791,21 +5254,31 @@ function parseFeed(xml, source) {
 	let item = null;
 	let itemDepth = 0;
 	let seen = 0;
+	let categories = [];
+	let images = [];
+	let itemCredits = [];
+	let mediaScopes = [];
+	let activeCredit = null;
+	let field = null;
 	const items = [];
+	const fields = [
+		"title",
+		"description",
+		"summary",
+		"link",
+		"pubdate",
+		"published",
+		"updated",
+		"dpp:paid",
+		"dcterms:accessrights",
+		"category"
+	];
 	const append = (text) => {
-		if (item && stack.length === itemDepth + 1) {
-			const name = stack.at(-1);
-			if ([
-				"title",
-				"description",
-				"summary",
-				"link",
-				"pubdate",
-				"published",
-				"updated",
-				"dpp:paid"
-			].includes(name)) item[name] = ((item[name] ?? "") + text).slice(0, 6e3);
+		if (activeCredit) {
+			activeCredit.text = (activeCredit.text + text).slice(0, 2e3);
+			return;
 		}
+		if (item && field && !stack.some((name) => ["script", "style"].includes(name))) item[field] = ((item[field] ?? "") + text).slice(0, 12e3);
 	};
 	parser.on("doctype", () => {
 		throw new FeedError("invalid_xml");
@@ -4821,23 +5294,88 @@ function parseFeed(xml, source) {
 		if (root === "rss" && stack.join("/") === "rss/channel/item" || root === "feed" && stack.join("/") === "feed/entry") {
 			if (++seen > 200) throw new FeedError("too_many_items");
 			item = {};
+			categories = [];
+			images = [];
+			itemCredits = [];
+			mediaScopes = [];
+			activeCredit = null;
 			itemDepth = stack.length;
+		}
+		if (item && stack.length <= itemDepth + 2 && [
+			"media:group",
+			"media:content",
+			"media:thumbnail",
+			"enclosure"
+		].includes(name)) mediaScopes.push({
+			depth: stack.length,
+			credits: []
+		});
+		if (item && name === "media:credit" && stack.length <= itemDepth + 3) {
+			const lastScope = mediaScopes.at(-1);
+			const parent = lastScope?.depth === stack.length - 1 ? lastScope : void 0;
+			if (parent || stack.length === itemDepth + 1) activeCredit = {
+				depth: stack.length,
+				credits: parent?.credits ?? itemCredits,
+				text: ""
+			};
+		}
+		if (item && stack.length === itemDepth + 1 && fields.includes(name)) {
+			field = name;
+			if (name === "category") item.category = "";
+			if (name === "category" && tag.attributes.term) item.category = String(tag.attributes.term);
+		}
+		if (item && stack.length > itemDepth + 1 && field && [
+			"p",
+			"div",
+			"br",
+			"li"
+		].includes(name)) append("\n\n");
+		if (item && stack.length <= itemDepth + 2 && [
+			"media:content",
+			"media:thumbnail",
+			"enclosure"
+		].includes(name)) {
+			const type = String(tag.attributes.type ?? "").toLowerCase();
+			const medium = String(tag.attributes.medium ?? "").toLowerCase();
+			const candidate = imageUrl(String(tag.attributes.url ?? ""), source);
+			if (images.length < 8 && candidate && (!type || type.startsWith("image/")) && (!medium || medium === "image") && (name !== "enclosure" || type.startsWith("image/"))) images.push({
+				url: candidate,
+				creditScopes: [...mediaScopes].reverse().map((scope) => scope.credits).concat([itemCredits]),
+				priority: name === "media:content" ? 0 : name === "media:thumbnail" ? 1 : 2
+			});
 		}
 		if (item && root === "feed" && name === "link" && stack.length === itemDepth + 1 && (!tag.attributes.rel || tag.attributes.rel === "alternate")) item.link = String(tag.attributes.href ?? "");
 	});
 	parser.on("text", append);
 	parser.on("cdata", append);
 	parser.on("closetag", () => {
+		if (activeCredit && activeCredit.depth === stack.length) {
+			if (activeCredit.credits.length < 4) activeCredit.credits.push(plainText(activeCredit.text, 200));
+			activeCredit = null;
+		}
+		if (mediaScopes.at(-1)?.depth === stack.length) mediaScopes.pop();
+		if (item && field === "category" && stack.at(-1) === "category" && categories.length < 12) categories.push(plainText(item.category ?? "", 120));
+		if (item && field && stack.at(-1) === field) field = null;
 		if (item && stack.length === itemDepth) {
 			const title = plainText(item.title ?? "", 500);
 			const url = articleUrl(item.link ?? "", source);
+			const rights = item["dcterms:accessrights"]?.trim().toUpperCase();
+			const accessLevel = rights === "FREE" ? "free" : ["PAYING", "MEMBER"].includes(rights ?? "") ? "restricted" : "unknown";
+			const description = item.description ?? item.summary ?? "";
+			const image = images.sort((a, b) => a.priority - b.priority)[0];
 			if (title && url && item["dpp:paid"]?.trim().toLowerCase() !== "true") items.push({
 				url,
 				title,
-				excerpt: plainText(item.description ?? item.summary ?? "", 300),
+				excerpt: plainText(description, 300),
+				bodyText: accessLevel === "restricted" ? "" : readingText(description),
+				imageUrl: image?.url ?? null,
+				imageCredit: (image?.creditScopes.find((scope) => scope.some(Boolean)) ?? []).filter(Boolean).join(" · ").slice(0, 200),
+				accessLevel,
+				categories: categories.filter(Boolean),
 				publishedAt: publicationDate(item.pubdate ?? item.published ?? item.updated ?? "")
 			});
 			item = null;
+			field = null;
 		}
 		stack.pop();
 	});
@@ -4868,8 +5406,8 @@ async function fetchFeed(source, state, fetcher = fetch) {
 			headers: {
 				Accept: "application/rss+xml, application/atom+xml, application/xml, text/xml, */*;q=0.2",
 				"User-Agent": "MyPressReview/0.1 (+https://github.com/laurentkai/my-press-review)",
-				...state.etag ? { "If-None-Match": state.etag } : {},
-				...state.last_modified ? { "If-Modified-Since": state.last_modified } : {}
+				...state.reading_metadata_version !== 0 && state.etag ? { "If-None-Match": state.etag } : {},
+				...state.reading_metadata_version !== 0 && state.last_modified ? { "If-Modified-Since": state.last_modified } : {}
 			}
 		});
 		if (response.status < 300 || response.status >= 400 || response.status === 304) break;
@@ -4934,7 +5472,7 @@ async function collectSource(db, id, fetcher = fetch, now = Date.now()) {
 		status: "unavailable"
 	};
 	const owner = crypto.randomUUID();
-	const state = await db.prepare("UPDATE trial_sources SET lease_owner=?, lease_until=?, last_attempt_at=? WHERE id=? AND enabled=1 AND next_fetch_at<=? AND lease_until<=? RETURNING id, etag, last_modified").bind(owner, now + 12e4, now, id, now, now).first();
+	const state = await db.prepare("UPDATE trial_sources SET lease_owner=?, lease_until=?, last_attempt_at=? WHERE id=? AND enabled=1 AND next_fetch_at<=? AND lease_until<=? RETURNING id, etag, last_modified, reading_metadata_version").bind(owner, now + 12e4, now, id, now, now).first();
 	if (!state) return {
 		processed: false,
 		status: "not_due"
@@ -4945,12 +5483,13 @@ async function collectSource(db, id, fetcher = fetch, now = Date.now()) {
 		const writes = [];
 		for (const item of result.items) {
 			const articleId = await digest(id + "\n" + item.url);
-			writes.push(db.prepare(`INSERT INTO trial_articles(id,source_id,url,title,excerpt,published_at,collected_at)
-        SELECT ?,?,?,?,?,?,? WHERE EXISTS(SELECT 1 FROM trial_sources WHERE id=? AND enabled=1 AND lease_owner=? AND lease_until>?)
-        ON CONFLICT(source_id,url) DO UPDATE SET title=excluded.title,excerpt=excluded.excerpt,published_at=COALESCE(excluded.published_at,trial_articles.published_at),collected_at=excluded.collected_at`).bind(articleId, id, item.url, item.title, item.excerpt, item.publishedAt, collected, id, owner, Date.now()));
+			const topic = classifyArticle(item, id);
+			writes.push(db.prepare(`INSERT INTO trial_articles(id,source_id,url,title,excerpt,published_at,collected_at,body_text,image_url,image_credit,access_level,publisher_categories,theme,subtheme)
+        SELECT ?,?,?,?,?,?,?,?,?,?,?,?,?,? WHERE EXISTS(SELECT 1 FROM trial_sources WHERE id=? AND enabled=1 AND lease_owner=? AND lease_until>?)
+        ON CONFLICT(source_id,url) DO UPDATE SET title=excluded.title,excerpt=excluded.excerpt,published_at=COALESCE(excluded.published_at,trial_articles.published_at),collected_at=excluded.collected_at,body_text=excluded.body_text,image_url=excluded.image_url,image_credit=excluded.image_credit,access_level=excluded.access_level,publisher_categories=excluded.publisher_categories,theme=excluded.theme,subtheme=excluded.subtheme`).bind(articleId, id, item.url, item.title, item.excerpt, item.publishedAt, collected, item.bodyText, item.imageUrl, item.imageCredit, item.accessLevel, JSON.stringify(item.categories), topic.theme, topic.subtheme, id, owner, Date.now()));
 		}
 		writes.push(db.prepare("DELETE FROM trial_articles WHERE source_id=? AND (collected_at<? OR id NOT IN (SELECT id FROM trial_articles WHERE source_id=? ORDER BY collected_at DESC LIMIT 200))").bind(id, (/* @__PURE__ */ new Date(now - 12096e5)).toISOString(), id));
-		writes.push(db.prepare("UPDATE trial_sources SET status=?,last_success_at=?,next_fetch_at=?,etag=?,last_modified=?,last_item_count=?,lease_until=0,lease_owner=NULL WHERE id=? AND lease_owner=? AND enabled=1").bind(result.status, now, now + MIN_INTERVAL, result.etag, result.modified, result.items.length, id, owner));
+		writes.push(db.prepare("UPDATE trial_sources SET status=?,last_success_at=?,next_fetch_at=?,etag=?,last_modified=?,last_item_count=?,reading_metadata_version=1,lease_until=0,lease_owner=NULL WHERE id=? AND lease_owner=? AND enabled=1").bind(result.status, now, now + MIN_INTERVAL, result.etag, result.modified, result.items.length, id, owner));
 		writes.push(db.prepare("UPDATE trial_sources SET lease_until=0,lease_owner=NULL WHERE id=? AND lease_owner=?").bind(id, owner));
 		await db.batch(writes);
 		return {
@@ -4979,9 +5518,41 @@ async function scheduledCollection(db, now = Date.now()) {
 	await db.batch([db.prepare("DELETE FROM trial_sessions WHERE expires_at<=?").bind(now), db.prepare("DELETE FROM trial_login_limits WHERE expires_at<=?").bind(now)]);
 }
 // apps/worker/trial.ts
+function articleResponse(item) {
+	const categories = JSON.parse(item.publisher_categories);
+	const topic = item.theme ? {
+		theme: item.theme,
+		subtheme: item.subtheme
+	} : classifyArticle({
+		...item,
+		categories
+	}, item.source_id);
+	return {
+		id: item.id,
+		sourceId: item.source_id,
+		url: item.url,
+		title: item.title,
+		excerpt: item.excerpt,
+		publishedAt: item.published_at,
+		collectedAt: item.collected_at,
+		imageUrl: item.image_url,
+		imageCredit: item.image_credit,
+		accessLevel: item.access_level,
+		publisherCategories: categories,
+		...topic
+	};
+}
+async function readArticle(c) {
+	const row = await c.env.DB.prepare("SELECT a.* FROM trial_articles a JOIN trial_sources s ON s.id=a.source_id WHERE a.id=? AND s.enabled=1").bind(c.req.param("id")).first();
+	if (!row) return c.json({ error: "NOT_FOUND" }, 404);
+	return c.json({
+		...articleResponse(row),
+		bodyText: row.access_level === "restricted" ? "" : row.body_text ?? ""
+	});
+}
 async function workspace(c) {
 	const states = await c.env.DB.prepare("SELECT s.*, (SELECT COUNT(*) FROM trial_articles a WHERE a.source_id=s.id) AS article_count FROM trial_sources s").all();
-	const rows = await c.env.DB.prepare(`SELECT * FROM (SELECT a.*, ROW_NUMBER() OVER(PARTITION BY source_id ORDER BY COALESCE(published_at,collected_at) DESC,a.id) AS position FROM trial_articles a JOIN trial_sources s ON s.id=a.source_id WHERE s.enabled=1) WHERE position<=20 ORDER BY COALESCE(published_at,collected_at) DESC,id`).all();
+	const rows = await c.env.DB.prepare(`SELECT * FROM (SELECT a.id,a.source_id,a.url,a.title,a.excerpt,a.published_at,a.collected_at,a.image_url,a.image_credit,a.access_level,a.publisher_categories,a.theme,a.subtheme, ROW_NUMBER() OVER(PARTITION BY source_id ORDER BY COALESCE(published_at,collected_at) DESC,a.id) AS position FROM trial_articles a JOIN trial_sources s ON s.id=a.source_id WHERE s.enabled=1) WHERE position<=20 ORDER BY COALESCE(published_at,collected_at) DESC,id`).all();
 	return c.json({
 		sources: trialCatalog.map((source) => {
 			const state = states.results.find((entry) => entry.id === source.id);
@@ -4995,15 +5566,7 @@ async function workspace(c) {
 				articleCount: state?.article_count ?? 0
 			};
 		}),
-		articles: rows.results.map((item) => ({
-			id: item.id,
-			sourceId: item.source_id,
-			url: item.url,
-			title: item.title,
-			excerpt: item.excerpt,
-			publishedAt: item.published_at,
-			collectedAt: item.collected_at
-		}))
+		articles: rows.results.map(articleResponse)
 	});
 }
 async function toggleSource(c) {
@@ -5039,7 +5602,7 @@ app.use("/api/*", async (c, next) => {
 		if (!sameOrigin(c)) return c.json({ error: "ORIGIN_REFUSED" }, 403);
 		return next();
 	}
-	if ((c.req.path === "/api/trial/workspace" || c.req.path === "/api/trial/logout" || /^\/api\/trial\/sources\/[a-z0-9]+(?:\/refresh)?$/.test(c.req.path)) && await trialAuthenticated(c)) {
+	if ((c.req.path === "/api/trial/workspace" || /^\/api\/trial\/articles\/[a-f0-9]{64}$/.test(c.req.path) || c.req.path === "/api/trial/logout" || /^\/api\/trial\/sources\/[a-z0-9]+(?:\/refresh)?$/.test(c.req.path)) && await trialAuthenticated(c)) {
 		if (!["GET", "HEAD"].includes(c.req.method) && !sameOrigin(c)) return c.json({ error: "ORIGIN_REFUSED" }, 403);
 		return next();
 	}
@@ -5066,6 +5629,7 @@ app.get("/api/trial/session", async (c) => c.json({
 app.post("/api/trial/login", loginTrial);
 app.post("/api/trial/logout", logoutTrial);
 app.get("/api/trial/workspace", workspace);
+app.get("/api/trial/articles/:id", readArticle);
 app.put("/api/trial/sources/:id", toggleSource);
 app.post("/api/trial/sources/:id/refresh", refreshSource);
 app.all("/api/auth/*", (c) => c.json({
