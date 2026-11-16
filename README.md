@@ -25,3 +25,4 @@ Cible confirmée : un Worker Cloudflare unique pour les fichiers statiques, l’
 - [Collecte et traitement IA](docs/INGESTION.md)
 - [Étapes de réalisation](docs/ROADMAP.md)
 - [Consignes des agents](AGENTS.md)
+- [Collaboration : Codex → Claude → GitHub Copilot](docs/WORKFLOW.md)

@@ -13,6 +13,8 @@
 - TypeScript ; socle proposé React + Vite et Hono.
 - Aucun budget fixé : rendre la consommation et les limites d’usage configurables.
 
+- Collaboration : Codex implémente, Claude réalise les revues de code, GitHub Copilot rédige la documentation ; déroulement dans WORKFLOW.md.
+
 ## Questions restantes
 
 1. Admission sur invitation, liste autorisée ou inscription ouverte avec validation ? Quel compte reçoit le rôle initial Super Admin ?
