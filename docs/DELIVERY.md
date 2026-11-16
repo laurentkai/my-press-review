@@ -28,6 +28,16 @@ La vérification navigateur de production a confirmé le contrôle d’accès : 
 
 Le Worker a collecté les sept flux actifs : 169 articles enregistrés, dont 30 déjà collectés par le Cron pour 7sur7 (`refresh` a répondu `not_due`), puis 30 DH, 30 La Libre, 19 Le Figaro, 20 Le JSL, 10 Investing.com et 30 Gouvernement.lu. L’API en affichait 129, avec une limite de 20 par source. Le Soir et Zonebourse sont restés bloqués sans flux, avec zéro article et `last_success_at` nul. Le relevé local antérieur de 166 articles/126 affichés reste distinct.
 
+## Publication de l’itération 4
+
+La révision corrigée `3973252152195ae6c3105b4663a84db37dfc7b00` après `54e8465` ajoute le classement des articles, les images des flux et la lecture interne. Le workflow [43951478895](https://github.com/laurentkai/my-press-review/actions/runs/43951478895) a réussi : `verify` a validé 165 tests, le build, le format et la migration locale ; `deploy` a appliqué la migration distante `0003` et publié le Worker ; `promote` a promu la release vers `Production`. La promotion initiale de cette révision a produit le commit `c9c94ef` sur `Production`.
+
+La seconde revue Claude de `54e8465..3973252` ne relève aucun blocage ni problème majeur et confirme que les quatre remarques mineures ont été corrigées. Les contrôles rapportés comprennent 68 tests de classement et trois tests de régression sur les crédits et ETag.
+
+La vérification navigateur de production a observé un workspace `200` avec 140 articles au moment de la capture ; dix thèmes étaient présents et 119 articles classés au premier chargement. Un rafraîchissement La Libre a traité 30 éléments avec statut `ok` ; la liste contenait 140 articles au total, dont 20 avec image après cette collecte. Un article d’accès `FREE` a renvoyé 275 caractères par l’API privée (`200`, `no-store`), tandis que le même détail sans identifiants a répondu `401`. Le contrôle visuel a confirmé le lecteur, une image chargée, son crédit, le lien original, le focus sur `H1` et l’absence de débordement à 390 px.
+
+Ces observations sont des instantanés, pas une garantie que toutes les sources sont déjà enrichies en images : les collectes suivantes respectent le prochain horaire dû et l’intervalle minimal de 15 minutes. Les nombres de l’itération 3 (169 articles stockés, 129 affichés) restent historiques et distincts des 140 articles vus après le déploiement de l’itération 4. Voir le [compte rendu de l’itération 4](iterations/0004.md).
+
 ## Vérification continue
 
 `.github/workflows/deploy.yml` vérifie les pull requests ciblant `Main` et les pushes sur `Main` (ainsi qu’un déclenchement manuel sur `Main`). Le job de vérification exécute, dans l’ordre :

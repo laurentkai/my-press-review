@@ -2,7 +2,7 @@
 
 ## Itération 3 : accès temporaire par code
 
-Le code `c2fb5a875de1ede655a18b4da89a949594bafa83` est déployé dans l’espace de production. Il ajoute un accès temporaire à un espace d’essai partagé ; ce n’est ni une authentification OAuth ni un système de comptes individuels. Les routes OAuth restent indisponibles.
+La révision `c2fb5a875de1ede655a18b4da89a949594bafa83` a introduit l’accès temporaire à l’espace d’essai partagé, toujours inclus dans le runtime de production ; ce n’est ni une authentification OAuth ni un système de comptes individuels. Les routes OAuth restent indisponibles.
 
 Le code d’accès est généré aléatoirement et doit contenir au moins 24 caractères. Le secret GitHub `TEST_ACCESS_CODE` est configuré pour le déploiement ; en local, le code est disponible dans `~/.local/share/my-press-review/trial-access-code.txt` (permissions `0600`) et peut être configuré dans `.dev.vars`, ignoré par Git. Le propriétaire peut ouvrir ce fichier pour copier le code dans le formulaire de connexion. Ne pas exposer sa valeur dans les journaux, commandes enregistrées ou fichiers versionnés.
 
@@ -10,13 +10,15 @@ Le code d’accès est généré aléatoirement et doit contenir au moins 24 car
 
 Les routes `/api/trial/*` protègent l’espace d’essai. Un accès par code ne constitue pas un rôle ni une identité par utilisateur : tous les détenteurs voient le même espace et les mêmes articles, sans isolation ni personnalisation individuelle. Aucun compte Super Admin n’est provisionné ; une demande avec le code d’essai ne donne pas accès à `/api/admin/*`.
 
+Depuis le déploiement de l’itération 4, la lecture détaillée passe par `GET /api/trial/articles/:id`, sous la même session d’essai, avec réponse privée `no-store`. La liste `/api/trial/workspace` n’inclut pas le texte de lecture ; l’endpoint de détail renvoie `404` si l’article n’existe plus ou si sa source est en pause. La vérification de production a confirmé un détail protégé : `200` avec session et `401` sans identifiants. Cela ne change ni l’accès partagé ni l’absence d’identité individuelle.
+
 La vérification navigateur de production a confirmé que `/api/trial/session` sans cookie renvoie `authenticated: false` et `available: true`, que `/api/trial/workspace` renvoie `401` sans session, puis que la connexion valide renvoie `200` et qu’une session suivante est authentifiée. Même authentifié, `/api/admin/users` répond `401` ; un nouvel accès au workspace sans identifiants est également refusé.
 
 La connexion applique une limite D1 de huit tentatives par fenêtre de dix minutes et par IP. Cette mesure n’est pas une protection contre un flood distribué ; ce risque reste à traiter avant tout usage plus large.
 
 ## Fermeture et rotation de l’accès d’essai
 
-Ces procédures s’appliquent au runtime de l’itération 3 actuellement déployé :
+Ces procédures s’appliquent au runtime de l’itération 4 actuellement déployé :
 
 - Pour désactiver l’accès et la collecte planifiée, remplacer le secret GitHub `TEST_ACCESS_CODE` par la valeur courte non secrète `disabled` (moins de 24 caractères), puis déployer le `Main` courant. La validation du Worker refuse alors la connexion et le Cron n’exécute pas la collecte.
 - Ne pas supprimer uniquement le secret GitHub : le Worker déjà publié conserverait son secret, tandis que le workflow exige une valeur non vide et ne pourrait plus effectuer un nouveau déploiement.

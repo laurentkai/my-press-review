@@ -13,7 +13,8 @@
 - TypeScript ; socle proposé React + Vite et Hono.
 - Aucun budget fixé : rendre la consommation et les limites d’usage configurables.
 - Pour l’itération 3 seulement, accès temporaire par un code partagé à un espace d’essai privé ; ce choix ne tranche pas l’authentification de la cible ni l’isolation par utilisateur.
-- Catalogue initial demandé : neuf sources ; sept flux configurés et actifs, Le Soir et Zonebourse désactivés après prétests 403 sans flux vérifié. Les catégories restent des étiquettes proposées, pas des classifications confirmées ni IA.
+- Catalogue initial demandé : neuf sources ; sept flux configurés et actifs, Le Soir et Zonebourse désactivés après prétests 403 sans flux vérifié. Les catégories géographiques/financières associées aux sources restent des étiquettes proposées, pas des classifications confirmées.
+- Demande de l’itération 4 confirmée : classer les articles par thème/sous-thème, utiliser les images présentes dans les flux originaux et proposer une lecture interne avec lien vers l’éditeur. Cette demande ne confirme ni droits de republication ni recours à l’IA.
 - Déploiement automatique autorisé après commit poussé sur `Main`, avec promotion contrôlée vers `Production` ; le premier déploiement manuel a réussi, les pushes suivants sur `Main` déclenchent le même pipeline.
 - Collaboration : Codex implémente, Claude réalise les revues de code, GitHub Copilot rédige la documentation ; déroulement dans [WORKFLOW.md](WORKFLOW.md).
 
@@ -31,4 +32,4 @@ Ces décisions décrivent l’orientation produit et technique ; elles ne signif
 
 ## État opérationnel
 
-Le Worker et la base D1 `press-review` sont déployés sur Cloudflare. La révision `c2fb5a8` a été intégrée à `Main`, livrée par le pipeline automatique et promue dans `Production` ; elle ajoute un espace d’essai partagé protégé par code et la collecte RSS. OAuth, IA, comptes individuels et Super Admin ne sont pas implémentés. `database_id` à zéro dans `wrangler.jsonc` reste un placeholder du dépôt ; les identifiants réels sont injectés uniquement dans `.deployment` en CI. Le déploiement utilise `workers.dev` sans domaine personnalisé.
+Le Worker et la base D1 `press-review` sont déployés sur Cloudflare. La révision `c2fb5a8` a introduit l’espace d’essai partagé protégé par code et la collecte RSS. La révision corrigée de l’itération 4 (`3973252`, après `54e8465`) ajoute le classement, les images de flux et la lecture interne ; le workflow 43951478895 a réussi la migration distante 0003 et promu le code vers `Production` (`c9c94ef`). La seconde revue Claude de `54e8465..3973252` ne relève aucun blocage ni problème majeur et confirme la correction des quatre remarques mineures. OAuth, IA et comptes individuels ne sont pas implémentés. `database_id` à zéro dans `wrangler.jsonc` reste un placeholder du dépôt ; les identifiants réels sont injectés uniquement dans `.deployment` en CI. Le déploiement utilise `workers.dev` sans domaine personnalisé.

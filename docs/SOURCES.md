@@ -26,9 +26,21 @@ Les pages de référence liées ci-dessus ont été rapportées lors des prétes
 
 Les statuts et erreurs sont suivis par source. Le Soir et Zonebourse restent visibles comme bloqués et désactivés plutôt que d’être contournés. Leur réactivation attend un flux vérifié et des prétests concluants.
 
+### Capture locale initiale de l’itération 4 — historique
+
+Lors de la première capture locale sur `54e8465`, avant les corrections de revue, les sept collectes ont produit 169 observations de flux (`30 + 30 + 30 + 19 + 20 + 10 + 30`). La liste renvoyée au moment de cette capture contenait 140 articles, dont 84 avec image et 25 marqués `restricted`. Ces mesures historiques ne constituent pas une mesure de la révision corrigée `3973252` et ne sont pas le relevé de production de l’itération 3 (169 articles stockés, 129 affichés), même si les totaux de collecte sont proches.
+
+La révision corrigée `3973252` ajoute les alias de classement, l’avertissement d’abonnement possible quand le statut d’accès est inconnu et l’attribution d’image liée à son contexte. Elle est déployée en production ; cette ancienne capture locale ne mesure pas ce déploiement. Les images du flux utilisent une liste technique de cinq hôtes exacts ; cela ne confirme pas les droits de leur affichage ou de leur conservation. Les détails et limites figurent dans [le compte rendu de l’itération 4](iterations/0004.md).
+
+### Vérification ponctuelle en production après l’itération 4
+
+Le workflow [43951478895](https://github.com/laurentkai/my-press-review/actions/runs/43951478895) a publié `3973252`, appliqué la migration distante `0003` et promu la release vers `Production` (`c9c94ef`). Lors de la vérification navigateur, le workspace renvoyait 140 articles ; dix thèmes étaient présents et 119 articles classés au premier chargement. Un rafraîchissement La Libre a traité 30 éléments (`status: ok`) ; la liste contenait 140 articles au total, dont 20 avec image après cette collecte. Les autres sources continuent de s’enrichir au prochain horaire dû, en respectant 15 minutes minimum : ces observations ne signifient pas que chaque image est déjà disponible.
+
+Ce relevé est un instantané de la vérification post-déploiement, distinct de la collecte de l’itération 3 (169 articles stockés/129 affichés) et de la capture locale antérieure de l’itération 4 (169 observations de flux/140 affichés). Il ne garantit pas la disponibilité permanente des flux.
+
 ## Cadence et intégration
 
-La cadence produit visée est de 15 minutes par source. Dans le code, le Cron s’exécute chaque minute, mais ne traite qu’une seule source échue par invocation et impose au moins 15 minutes entre deux collectes d’une source. L’intégration comprend aussi le suivi de l’état, les filtres par catégorie/source et la recherche dans les titres et extraits. Les étiquettes de catégorie sont statiques ; il n’y a pas de classement par IA.
+La cadence produit visée est de 15 minutes par source. Dans le code, le Cron s’exécute chaque minute, mais ne traite qu’une seule source échue par invocation et impose au moins 15 minutes entre deux collectes d’une source. L’intégration comprend aussi le suivi de l’état, les filtres par catégorie/source et la recherche dans les titres et extraits. L’itération 3 utilisait des catégories de source statiques ; l’itération 4 ajoute un classement déterministe de thèmes/sous-thèmes sans IA, maintenant déployé.
 
 L’espace d’essai est temporairement protégé par un code partagé. Il ne fournit pas d’isolation des sources ou articles entre ses utilisateurs. Le futur produit pourra offrir une sélection et des catégories personnalisées par compte, après définition de l’authentification, des permissions et des règles de contenu.
 

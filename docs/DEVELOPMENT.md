@@ -77,4 +77,18 @@ La connexion Cloudflare et le secret/variables GitHub sont configurés ; un prem
 
 ## État du prototype
 
-Le code `c2fb5a8` est déployé en production : il fournit un espace d’essai partagé par code, sept flux RSS actifs et deux sources désactivées. Un essai local distinct avait enregistré 166 articles (126 affichés) ; depuis le Worker Cloudflare, une collecte a enregistré 169 articles (129 affichés). OAuth, les comptes individuels, le Super Admin et l’IA restent à implémenter. Voir [Sources](SOURCES.md), le [compte rendu de l’itération 1](iterations/0001.md), celui de l’[activation CI/CD](iterations/0002.md) et celui de l’[itération 3](iterations/0003.md).
+La révision `c2fb5a8` a livré l’espace d’essai partagé par code, sept flux RSS actifs et deux sources désactivées. Ses relevés historiques — 166 articles/126 affichés en local et 169/129 en production — sont distincts des vérifications de l’itération 4. OAuth, les comptes individuels, le Super Admin et l’IA restent à implémenter.
+
+La révision corrigée `3973252` après `54e8465` est publiée ; le workflow 43951478895 a réussi 165 tests, build, format, migration distante 0003 et promotion vers `Production` (`c9c94ef`). La seconde revue Claude de `54e8465..3973252` ne relève aucun blocage ni problème majeur et confirme les quatre remarques mineures corrigées. Voir [Sources](SOURCES.md), les comptes rendus [0001](iterations/0001.md), [0002](iterations/0002.md), [0003](iterations/0003.md) et [0004](iterations/0004.md).
+
+Si une base D1 locale a déjà appliqué une ancienne version de `0003_article_reading.sql` avant l’ajout de `reading_metadata_version`, ne pas la réinitialiser. Inspecter d’abord le schéma :
+
+```sh
+npx --no-install wrangler d1 execute press-review --local --command "PRAGMA table_info(trial_sources);"
+```
+
+Uniquement si le résultat ne contient pas `reading_metadata_version`, ajouter la colonne à la base locale existante :
+
+```sh
+npx --no-install wrangler d1 execute press-review --local --command "ALTER TABLE trial_sources ADD COLUMN reading_metadata_version INTEGER NOT NULL DEFAULT 0;"
+```

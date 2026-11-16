@@ -10,7 +10,9 @@
 
 Les routes OAuth Microsoft/Apple répondent toujours qu’elles ne sont pas configurées (`503`) : l’accès par code n’est pas OAuth. Les routes de l’essai protègent l’espace partagé, mais ne fournissent ni identité individuelle, ni cloisonnement des données, ni compte Super Admin. L’API d’administration existante reste protégée.
 
-La révision `c2fb5a875de1ede655a18b4da89a949594bafa83` est déployée sur Cloudflare : le Worker de production exécute maintenant le runtime de l’espace d’essai et ses migrations. Les résultats locaux et ceux de production sont consignés séparément dans le compte rendu de l’itération 3.
+La révision `c2fb5a875de1ede655a18b4da89a949594bafa83` a introduit en production le runtime de l’espace d’essai et ses migrations ; les résultats correspondants sont consignés dans le compte rendu de l’itération 3.
+
+La révision corrigée de l’itération 4 (`3973252152195ae6c3105b4663a84db37dfc7b00`) ajoute la migration `0003_article_reading.sql`, un classement déterministe, l’extraction d’images depuis certains flux et la route privée `GET /api/trial/articles/:id`. Elle est publiée en production par le workflow 43951478895 ; la migration distante `0003` et la promotion vers `Production` (`c9c94ef`) ont réussi. La seconde revue Claude de `54e8465..3973252` ne relève aucun blocage ni problème majeur et confirme la correction des quatre remarques mineures.
 
 ## Fonctionnement local et livraison
 

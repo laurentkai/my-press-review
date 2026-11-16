@@ -24,7 +24,13 @@ La migration `migrations/0002_private_feed_trial.sql` ajoute le stockage de l’
 
 La migration initialise neuf lignes dans `trial_sources` : sept activées avec l’état `pending` et Le Soir/Zonebourse désactivées avec `blocked_403`. Les URL de flux et les catégories sont définies dans le catalogue serveur, pas dans `trial_sources`. Les deux lignes bloquées n’ont pas d’URL de flux configurée et leur `last_attempt_at` est `NULL` dans l’état initial.
 
-Les tables `trial_*` ne référencent aucun utilisateur et ne fournissent aucune isolation individuelle : tous les détenteurs du code temporaire utilisent les mêmes sources et articles. Elles sont distinctes du futur schéma `users`/OAuth/`sessions`. La migration 0002 et le runtime de l’itération 3 sont déployés sur Cloudflare ; cette base d’essai reste partagée et ne constitue pas le futur modèle personnel. Voir [AUTH.md](AUTH.md) et [INGESTION.md](INGESTION.md).
+Les tables `trial_*` ne référencent aucun utilisateur et ne fournissent aucune isolation individuelle : tous les détenteurs du code temporaire utilisent les mêmes sources et articles. Elles sont distinctes du futur schéma `users`/OAuth/`sessions`. La migration 0002 et le runtime de l’itération 3 ont introduit cette base partagée, désormais étendue par la migration 0003 de l’itération 4 ; elle ne constitue pas le futur modèle personnel. Voir [AUTH.md](AUTH.md) et [INGESTION.md](INGESTION.md).
+
+### Migration 0003 — lecture et classement déployés
+
+`migrations/0003_article_reading.sql` est additive : elle conserve les lignes `trial_articles` et ajoute `body_text`, `image_url`, `image_credit`, `access_level` (`free`, `restricted`, `unknown`), `publisher_categories`, `theme` et `subtheme`, ainsi que `reading_metadata_version` à `trial_sources`. Ce marqueur protège l’enrichissement des métadonnées lors du passage de l’ancien Worker au nouveau : à la version `0`, le Worker ignore `ETag` et `Last-Modified`, qui ont pu être réécrits par l’ancien runtime entre la migration et sa publication ; il passe à la version `1` uniquement après une collecte réussie par le nouveau Worker. Cela ne contourne ni `next_fetch_at` ni un bail actif. La migration distante a réussi lors du workflow 43951478895. La migration initiale a été appliquée sur D1 local ; la base locale actuelle a ensuite été complétée par Codex pour inclure `reading_metadata_version`.
+
+Si une autre base D1 locale a déjà appliqué une ancienne version de `0003` sans cette colonne, ne pas réinitialiser ni effacer la base. Vérifier d’abord `PRAGMA table_info(trial_sources);` et exécuter l’`ALTER TABLE` indiqué dans [DEVELOPMENT.md](DEVELOPMENT.md) uniquement si `reading_metadata_version` est absente.
 
 ## Modèle conceptuel futur — non migré
 

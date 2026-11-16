@@ -19,6 +19,12 @@ Ces éléments décrivent la première itération. L’itération 3 ajoute un es
 - Les catégories du catalogue sont des étiquettes proposées, pas des classifications IA. Aucun traitement IA n’est implémenté.
 - L’itération 3 a été intégrée à `Main`, déployée par le workflow automatique et promue dans `Production`. Le compte rendu [0003](iterations/0003.md) documente la publication et les vérifications navigateur.
 
+## Itération 4 — déployée
+
+La révision corrigée `3973252` après `54e8465` ajoute une taxonomie commune de thèmes/sous-thèmes avec alias de catégories et rubriques, un classement déterministe, les images des flux et une page de lecture interne avec lien vers l’éditeur. Le classement n’est ni produit par IA, ni personnalisé par utilisateur, ni fondé sur la géographie de la source. Le workflow 43951478895 a réussi la migration distante 0003, publié le Worker et promu la release vers `Production` (`c9c94ef`). La seconde revue Claude ne relève aucun blocage ni problème majeur et confirme les quatre remarques mineures corrigées.
+
+La lecture présente le texte disponible dans la description ou le résumé du flux, pas le texte intégral de la page éditeur ; si l’accès est inconnu, elle avertit explicitement qu’un abonnement peut être nécessaire. Les statuts d’accès et les images ne confirment pas de droits de republication. L’itération 4, sa revue, ses contrôles locaux et ses limites sont détaillés dans [0004](iterations/0004.md).
+
 ## Cible produit, non livrée
 
 Application privée en français où chaque utilisateur configure et consulte sa revue ; un Super Admin gère la configuration globale. Les concepts et capacités ci-dessous sont une cible future, pas des fonctionnalités disponibles.

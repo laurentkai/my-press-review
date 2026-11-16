@@ -16,6 +16,10 @@ Implémentés et déployés : neuf sources au catalogue, sept flux RSS actifs et
 
 La revue Claude a conclu à l’absence de blocage ou de nouveau défaut démontré ; les remarques mineures ont été corrigées ou circonscrites/documentées. Les contrôles rapportés comprennent 57 tests, check/build/format, actionlint, dry-run avec IDs factices et vérification visuelle desktop/mobile. Le push vers `Main` a ensuite déclenché avec succès le workflow 43942205690, la migration distante 0002, le déploiement et la promotion. Voir le [compte rendu](iterations/0003.md).
 
+## Itération 4 — classement, images et lecture (livrée)
+
+La révision corrigée `3973252` après `54e8465` est déployée : taxonomie commune de thèmes/sous-thèmes avec alias, classement déterministe, images des flux et lecture interne avec lien original et avertissement d’abonnement possible quand l’accès est inconnu. Le workflow 43951478895 a réussi avec 165 tests, build, format et migration distante 0003, puis promu la release vers `Production` (`c9c94ef`). La seconde revue Claude ne relève aucun blocage ni problème majeur et confirme les quatre remarques mineures corrigées. Les vérifications navigateur et les limites sont détaillées dans le [compte rendu](iterations/0004.md).
+
 ## Suites à planifier — non réalisées
 
 1. Surveiller les états de collecte et la disponibilité des flux en production, sans interpréter une collecte ponctuelle comme une garantie de service.
@@ -25,4 +29,4 @@ La revue Claude a conclu à l’absence de blocage ou de nouveau défaut démont
 5. Décider le fournisseur IA, ses tâches, limites, traçabilité et conservation, puis implémenter et tester le traitement.
 6. Compléter favoris, lecture, recherche, notifications, accessibilité et parcours de gestion de données personnelles.
 
-Les catégories statiques de l’itération 3 ne sont pas un classement IA. Le token Cloudflare configuré doit être remplacé avant son expiration le 16 novembre 2027 ; voir [DELIVERY.md](DELIVERY.md).
+Les catégories géographiques statiques de l’itération 3 sont distinctes du classement déterministe de l’itération 4 ; aucun des deux n’utilise l’IA. Le token Cloudflare configuré doit être remplacé avant son expiration le 16 novembre 2027 ; voir [DELIVERY.md](DELIVERY.md).
