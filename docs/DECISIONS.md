@@ -12,6 +12,7 @@
 - Un Worker Cloudflare unique avec fichiers statiques (Static Assets), API et scheduler ; D1 pour les données.
 - TypeScript ; socle proposé React + Vite et Hono.
 - Aucun budget fixé : rendre la consommation et les limites d’usage configurables.
+- Déploiement automatique autorisé après commit poussé sur `Main`, avec promotion contrôlée vers `Production` ; la connexion Cloudflare et les paramètres GitHub restent à configurer.
 - Collaboration : Codex implémente, Claude réalise les revues de code, GitHub Copilot rédige la documentation ; déroulement dans [WORKFLOW.md](WORKFLOW.md).
 
 Ces décisions décrivent l’orientation produit et technique ; elles ne signifient pas que les fonctionnalités sont déjà livrées. Le socle disponible est décrit dans [PRODUCT.md](PRODUCT.md) et [le compte rendu de l’itération 1](iterations/0001.md).
@@ -24,7 +25,7 @@ Ces décisions décrivent l’orientation produit et technique ; elles ne signif
 4. Quelle durée de conservation des articles et des résultats IA ?
 5. Un sujet peut-il appartenir à plusieurs thèmes ? Faut-il reclasser l’historique après modification des règles ?
 6. Favoris, lus/non lus, recherche et notifications : lesquels inclure dans la première version ?
-7. Quel compte Cloudflare et domaine seront utilisés, et les inscriptions développeur Microsoft/Apple sont-elles disponibles ? Le déploiement depuis `Production` sera-t-il manuel ou automatique ?
+7. Quel compte Cloudflare et domaine seront utilisés, et les inscriptions développeur Microsoft/Apple sont-elles disponibles ? La connexion Cloudflare est attendue ; les permissions effectives restent à vérifier.
 
 ## État opérationnel
 

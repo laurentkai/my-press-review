@@ -1,6 +1,10 @@
 # My Press Review
 
-Socle initial d’une application de revue de presse personnalisée. La première itération fournit une interface de démonstration React/Vite et un Worker Cloudflare avec routes API de statut et d’authentification non configurées, un schéma D1 initial et un déclencheur planifié sans collecte. Les contenus et sources de l’interface sont fictifs ; aucune authentification, collecte, IA, persistance des sources de l’interface ou mise en production n’est disponible.
+Socle initial d’une application de revue de presse personnalisée. L’interface de démonstration React/Vite et le Worker Cloudflare fournissent un schéma D1 initial et des routes API de statut, mais pas d’authentification, de collecte ou d’IA. Les contenus et sources de l’interface sont fictifs et leur configuration n’est pas persistée.
+
+## CI/CD et état de déploiement
+
+Le workflow vérifie les pull requests vers `Main` et les commits poussés sur `Main`. Le déploiement automatique après push à `Main` et la promotion contrôlée vers `Production` sont autorisés, mais restent inactifs tant que la connexion Cloudflare et les paramètres GitHub requis ne sont pas configurés. Aucun déploiement Cloudflare n’a encore eu lieu. Les exécutions de vérification sont consultables dans l’onglet Actions du dépôt GitHub. Voir [Branches, pipeline et livraison](docs/DELIVERY.md) et le [compte rendu de l’itération 2](docs/iterations/0002.md).
 
 ## Développer
 
@@ -26,3 +30,4 @@ Le détail des commandes, du prévisualiseur et des limites locales est dans le 
 - [Décisions et questions](docs/DECISIONS.md)
 - [Workflow des agents](docs/WORKFLOW.md)
 - [Compte rendu de la première itération](docs/iterations/0001.md)
+- [Compte rendu de l’itération CI/CD](docs/iterations/0002.md)

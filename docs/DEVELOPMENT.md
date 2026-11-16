@@ -42,6 +42,31 @@ npm run preview -- --port 4174 --strictPort
 
 Après tout nouveau build, arrêter puis relancer le serveur preview pour qu’il recharge le manifeste des assets ; un processus déjà lancé peut servir un manifeste périmé.
 
+## CI et outils de release
+
+Le workflow GitHub Actions utilise Node.js 24 et exécute :
+
+```sh
+npm ci
+npm run format:check
+npm run check
+npm run db:migrate:local
+```
+
+Il applique la migration uniquement à D1 local. Sur `Main`, le build vérifié est conservé comme artefact puis transmis au job de déploiement ; le job installe les outils avec `npm ci --ignore-scripts` et ne reconstruit pas l’application. Les détails du pipeline, de ses garde-fous et des conditions d’accès sont dans [DELIVERY.md](DELIVERY.md).
+
+Les scripts `package.json` exposent également ces commandes :
+
+| Commande | Fonction et précautions |
+| --- | --- |
+| `npm run release:export` | Crée `.release/` depuis le build existant et les migrations. Exige `SOURCE_SHA` (ou `GITHUB_SHA`) au format commit complet de 40 caractères. N’injecte aucun identifiant Cloudflare réel. |
+| `npm run release:configure` | Valide `CLOUDFLARE_ACCOUNT_ID` et `CLOUDFLARE_D1_DATABASE_ID`, puis copie l’export dans `.deployment/` et y injecte ces identifiants. Le dossier est ignoré par Git ; les identifiants ne sont pas des secrets et peuvent apparaître dans les journaux. |
+| `npm run release:promote` | **Mutation distante** : pousse l’instantané vérifié vers `origin/Production`. Ce n’est ni un test ni une commande de vérification courante ; ne l’exécuter que dans le processus de promotion explicitement autorisé. |
+
+`release:export` suppose que `npm run build` a déjà produit les entrées attendues. La préparation complète en CI fait l’export, la configuration, puis un dry-run Wrangler avant toute migration distante. La commande de promotion locale n’est pas nécessaire au développement quotidien et requiert un dépôt distant configuré.
+
+Le workflow n’est pas encore connecté à Cloudflare : la connexion du compte utilisateur et la configuration GitHub (secret/variables) restent en attente. Aucun vrai déploiement ne peut donc être effectué à ce stade. Ne mettez jamais un token Cloudflare dans une commande, un fichier suivi par Git ou une variable publique.
+
 ## Limites du prototype
 
-Les articles et sources affichés sont fictifs. L’ajout et l’activation/désactivation des sources ne durent que jusqu’au rechargement et ne déclenchent aucune requête de collecte. OAuth, session, IA et déploiement ne sont pas configurés. Le Cron Trigger est déclaré mais son gestionnaire est sans effet. Voir le [compte rendu de l’itération 1](iterations/0001.md).
+Les articles et sources affichés sont fictifs. L’ajout et l’activation/désactivation des sources ne durent que jusqu’au rechargement et ne déclenchent aucune requête de collecte. OAuth, session, IA et déploiement Cloudflare ne sont pas configurés. Le Cron Trigger est déclaré mais son gestionnaire est sans effet. Voir le [compte rendu de l’itération 1](iterations/0001.md) et celui du [socle CI/CD](iterations/0002.md).
