@@ -14,7 +14,9 @@
     "test": "vitest run",
     "check": "npm run typecheck && npm test && npm run build",
     "db:migrate:local": "wrangler d1 migrations apply press-review --local",
-    "format:check": "prettier --check apps packages tests index.html package.json tsconfig.json vite.config.ts vitest.config.ts wrangler.jsonc"
+    "format:check": "prettier --check apps packages tests scripts .github/workflows index.html package.json tsconfig.json vite.config.ts vitest.config.ts wrangler.jsonc",
+    "release:export": "node scripts/export-release.mjs",
+    "release:promote": "node scripts/promote-release.mjs"
   },
   "dependencies": {
     "hono": "^4.13.18",
