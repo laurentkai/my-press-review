@@ -4,7 +4,7 @@ Ces instructions s’appliquent à Codex, Claude et GitHub Copilot dans tout le 
 
 ## Contexte
 
-Lire README.md et docs/ avant toute modification. Le projet est au stade du cadrage. Ne pas inventer de décisions utilisateur : consulter docs/DECISIONS.md et y enregistrer les réponses confirmées.
+Lire README.md et docs/ avant toute modification. Le projet dispose d’un socle de démonstration local ; consulter docs/ROADMAP.md et docs/iterations/ pour distinguer ce qui est implémenté des fonctionnalités à venir. Ne pas inventer de décisions utilisateur : consulter docs/DECISIONS.md et y enregistrer les réponses confirmées.
 
 ## Répartition des rôles
 

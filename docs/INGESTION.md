@@ -1,29 +1,32 @@
 # Collecte et traitement IA
 
-## Cadence et pipeline
+## État implémenté
 
-Un Cron Trigger `*/15 * * * *` déclenche le Worker toutes les 15 minutes (UTC). Il sélectionne les flux actifs arrivés à échéance, récupère les nouveautés, normalise et déduplique, puis lance le traitement IA. Il s’agit d’une cadence de lancement, pas d’une garantie de publication complète en 15 minutes.
+Aucune source n’est collectée et aucun fournisseur IA n’est appelé. Le Cron Trigger `*/15 * * * *` est enregistré dans `wrangler.jsonc`, mais le gestionnaire `scheduled` dans `apps/worker/index.ts` est volontairement vide. Les articles de l’interface sont des fixtures fictives ; les URL ajoutées à la démonstration restent en mémoire et ne sont jamais visitées.
 
-Le scheduler assure la planification ; l’IA analyse les données collectées et ne constitue pas une source d’actualité autonome. Conserver les dates d’origine, les sources et les URL. Respecter les limites et cadences des sources.
+La cadence configurée est donc un déclencheur sans effet, pas une collecte active ni une garantie de fraîcheur.
 
-## Traitement IA proposé
+## Pipeline envisagé — non implémenté
 
-Classer les nouveautés en français selon les thèmes et sujets personnels. Résumés et synthèses sont à préciser. Ne traiter que les nouveaux contenus ou les versions modifiées ; enregistrer modèle, version de consigne et statut. Valider les sorties structurées et les identifiants de thèmes/sujets ; ne jamais remplacer silencieusement le texte original par un texte généré.
+Un Cron Trigger `*/15 * * * *` doit lancer la sélection des flux actifs échus (UTC), récupérer les nouveautés, normaliser et dédupliquer, puis lancer le traitement IA. C’est une cadence de lancement, pas une garantie de publication complète en 15 minutes. Le scheduler planifie ; l’IA analyse les données collectées et n’est pas une source d’actualité autonome. Conserver les dates d’origine, les sources et les URL ; respecter les cadences et limites des sources.
 
-Les articles sont des données non fiables : leurs instructions ne doivent ni modifier les consignes du traitement, ni déclencher des outils, ni révéler des données d’autres utilisateurs. Envoyer au fournisseur uniquement les données nécessaires et autorisées, jamais de secrets ou de jetons de session.
+Priorité proposée : classer les nouveautés en français selon les thèmes et sujets personnels. Résumés et synthèses restent à préciser. Ne retraiter que les nouveaux contenus ou les versions modifiées ; conserver modèle, version de prompt et état. Valider les sorties structurées et les identifiants de thèmes/sujets ; ne jamais remplacer silencieusement le texte original par un texte généré.
 
-## Résilience
+Les articles sont des données non fiables : leur contenu ne doit ni modifier les consignes du traitement, ni déclencher des outils, ni révéler les données d’autres utilisateurs. N’envoyer au fournisseur que les données nécessaires et autorisées, jamais secrets ou jetons de session.
 
-Verrou ou bail avec expiration pour éviter les traitements concurrents d’un même flux. Lots bornés, délais, limitation du débit, reprise avec temporisation et nombre d’essais maximal. États explicites : à traiter, en cours, terminé, erreur. Une panne IA ne bloque ni la collecte ni l’accès aux articles déjà disponibles. Répartir le travail sur plusieurs invocations et ajouter Queues si nécessaire après mesure ; ne pas supposer qu’une invocation pourra traiter toutes les sources et tous les utilisateurs.
+## Résilience future
 
-## Consommation
+Utiliser un verrou ou bail à expiration pour prévenir les traitements concurrents d’un même flux. Borner les lots, durées et débits ; reprendre avec temporisation et nombre d’essais maximal ; conserver les états à traiter, en cours, terminé et erreur. Une panne IA ne doit bloquer ni la collecte ni l’accès aux articles disponibles. Répartir le travail sur plusieurs invocations ; ajouter Queues si les volumes ou durées le justifient après mesure. Ne pas supposer qu’une invocation peut traiter toutes les sources et tous les utilisateurs.
 
-Aucun budget mensuel n’est imposé. Prévoir limites de lots, longueur de texte, fréquence de retraitement et consommation par utilisateur et globale, modifiables par le Super Admin. Afficher la consommation connue ; ne pas présenter une estimation comme une facture. En cas de limite atteinte, suspendre le traitement IA concerné en conservant les articles collectés et signaler l’état.
+## Consommation future
 
-## Contenu original
+Aucun budget mensuel n’est imposé. Prévoir des limites administrables par le Super Admin sur les lots, la longueur de texte, la fréquence de retraitement et la consommation par utilisateur et globale. Afficher la consommation connue sans présenter une estimation comme une facture. Si une limite est atteinte, suspendre le traitement IA concerné, conserver les articles collectés et signaler l’état.
 
-Récupérer RSS/Atom ou API autorisées en priorité. Conserver le texte intégral uniquement lorsque la source l’autorise et qu’il est disponible ; sinon afficher titre, extrait disponible et lien. Ne pas contourner les restrictions d’accès. Nettoyer HTML et ressources incorporées ; garder attribution et URL canonique dans les vues article et résultats IA. Tracer le statut de disponibilité du contenu.
+## Contenu original futur
 
-Références :
-- https://developers.cloudflare.com/workers/configuration/cron-triggers/
-- https://developers.cloudflare.com/workers/platform/limits/
+Privilégier RSS/Atom et API autorisés. Conserver le texte intégral uniquement si la source l’autorise et qu’il est disponible ; sinon afficher l’extrait disponible et le lien vers l’original. Ne pas contourner de restriction d’accès. Nettoyer HTML et ressources incorporées, conserver attribution et URL canonique dans les vues et résultats IA, et tracer la disponibilité du contenu.
+
+## Références de conception
+
+- [Cloudflare Cron Triggers](https://developers.cloudflare.com/workers/configuration/cron-triggers/)
+- [Cloudflare Workers limits](https://developers.cloudflare.com/workers/platform/limits/)

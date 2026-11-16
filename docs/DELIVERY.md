@@ -1,28 +1,24 @@
 # Branches et livraison
 
-## Organisation demandée
+## Politique de branches
 
-- `Main` : branche de développement confirmée, avec sources, documents, tests, scripts et configuration.
-- `Production` : uniquement les fichiers requis pour déployer, exportés depuis un commit validé de Main.
-- Le nom confirmé est `Main`. La branche locale `main` a été renommée en `Main` via un nom temporaire, pour gérer le disque macOS insensible à la casse. Son worktree principal reste associé à la branche renommée et ses commits sont inchangés. Le changement éventuel de branche distante par défaut sera traité séparément.
+- `Main` est la branche de développement de référence : elle conserve code, documentation, tests, outils et configuration.
+- `Production` est réservée à un export contrôlé des seuls fichiers nécessaires au déploiement ; ne pas y fusionner l’ensemble de `Main`.
+- Le travail de la première itération a été documenté sur la branche `init-all-agents`, révision `6887f3f`, avec `Main` comme destination. Son intégration à `Main` est prévue et autorisée, mais reste à réaliser par le coordinateur ; cette documentation ne change pas de branche et ne réalise ni commit ni fusion.
 
-Production existe au commit initial vide ; aucun déploiement n’est possible à ce stade. Les documents de cadrage sont versionnés depuis `init-all-agents` et intégrés à `Main` par avance rapide. Aucun push ni déploiement n’est effectué pendant ce cadrage.
+## État de livraison
 
-## Promotion proposée
+Aucun export contrôlé, script de promotion, environnement Cloudflare configuré ou déploiement n’existe. Il n’y a pas de commande de déploiement documentée. Le `database_id` à zéro de `wrangler.jsonc` est un placeholder de développement local seulement et ne doit pas servir à une cible réelle.
 
-1. Valider un commit de développement avec typage, contrôles et tests disponibles.
-2. Construire le site et le Worker dans un environnement reproductible.
-3. Générer un répertoire de livraison depuis une liste explicite de fichiers autorisés.
-4. Vérifier que le résultat contient les fichiers de déploiement, aucun secret, document de cadrage, test ou cache.
-5. Enregistrer l’export dans Production avec référence au commit source et empreintes des bundles.
-6. Déployer Production vers les ressources Cloudflare prévues, puis vérifier consultation, API et accès administrateur.
+La migration D1 locale est distincte du bundle applicatif. La configuration des accès et ressources Cloudflare, la cible de déploiement et son autorisation restent à fournir.
 
-Ne pas fusionner intégralement la branche de développement dans Production. La CI et le script d’export restent à implémenter ; aucune automatisation n’est active.
+## Processus futur, à construire et valider
 
-## Contenu envisagé de Production
+1. Valider une révision source et ses contrôles.
+2. Construire les ressources de manière reproductible.
+3. Créer un export à partir d’une liste explicite de fichiers autorisés.
+4. Vérifier contenu, secrets, empreintes et compatibilité des migrations.
+5. Promouvoir uniquement l’export dans `Production` en gardant la référence à la révision source.
+6. Déployer vers une cible autorisée et vérifier le service.
 
-Fichiers statiques construits, bundle Worker, configuration Wrangler sans secrets, migrations D1 nécessaires et, uniquement si la méthode de déploiement l’exige, manifeste minimal et verrou de dépendances de déploiement. Les chemins exacts seront fixés lors du premier build et pour le Worker unique avec Static Assets.
-
-## Exploitation
-
-Production contient le nécessaire pour déployer, pas les secrets ni les données D1. Les migrations et données sont gérées séparément des bundles. Un retour à un bundle précédent ne restaure pas une base : prévoir compatibilité des migrations et sauvegarde. Confirmer déploiement automatique ou manuel avant connexion GitHub/Cloudflare. Aucun changement de branche distante par défaut à ce stade.
+Ce processus est une proposition de travail, pas une automatisation active. Un retour à un bundle antérieur ne restaure pas la base : les migrations devront rester compatibles et une stratégie de sauvegarde sera nécessaire avant une mise en production.

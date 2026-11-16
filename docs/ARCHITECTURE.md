@@ -1,38 +1,22 @@
-# Architecture initiale
+# Architecture
 
-## Langage et socle
+## Socle implémenté
 
-Choix : TypeScript. Il partage types et validations entre interface, API et collecte, et convient au runtime Workers sans serveur permanent.
+- **Interface** : React 19 et Vite 8, en TypeScript ; les fixtures de démonstration se trouvent dans `apps/web/src/demo.ts`.
+- **API/runtime** : Hono sur Cloudflare Workers dans `apps/worker/index.ts`. Wrangler/Vite relie le Worker aux ressources statiques et à la base D1.
+- **Données** : migration `migrations/0001_identity_and_sources.sql`, appliquée à la base D1 locale.
+- **Planification** : le Cron Trigger Wrangler est configuré sur `*/15 * * * *` (UTC), mais son gestionnaire est sans effet.
 
-Socle proposé : React + Vite (interface), Hono (API), D1 (SQL et migrations), Cron Triggers (collecte). Choisir les versions et le gestionnaire de paquets au démarrage du code, puis versionner le verrouillage des dépendances.
+L’API expose le statut et les fournisseurs annoncés ; les fournisseurs OAuth répondent qu’ils ne sont pas configurés. Il n’existe pas encore d’API de connexion, de sessions actives, de collecte ou d’administration des données.
 
-## Hébergement
+## Fonctionnement local
 
-Décision confirmée : un Worker unique avec Static Assets, API et collecte planifiée. Interface et API partagent la même origine. D1 conserve les données. Aucun projet Pages séparé.
+Les scripts npm et leurs commandes exactes sont documentés dans [DEVELOPMENT.md](DEVELOPMENT.md). L’interface de démonstration est indépendante des données D1. La migration crée le schéma initial, mais aucun utilisateur, rôle, session ou contenu n’est préinséré.
 
-Référence : https://developers.cloudflare.com/workers/static-assets/
+Dans `wrangler.jsonc`, `database_id` vaut `00000000-0000-0000-0000-000000000000` : c’est un placeholder du dépôt, pas un identifiant Cloudflare utilisable ni une configuration de production.
 
-## Parcours des données
+## Architecture cible, non implémentée
 
-Cron `*/15 * * * *` (UTC, toutes les 15 minutes) → sélection des flux à collecter → requête conditionnelle HTTP (ETag/Last-Modified) → validation et parsing → normalisation et déduplication → enregistrement D1 → traitement IA des nouveautés → classement par thème/sujet → consultation authentifiée par API.
+Le Worker unique avec ressources statiques, API privée, D1 et collecte planifiée reste la cible. Le pipeline envisagé est : sélection de flux échus, récupération autorisée, validation et normalisation, déduplication, persistance, puis classement IA et consultation authentifiée. Aucune de ces étapes de collecte ou de traitement n’est présente. Les schémas détaillés sont séparés entre [modèle actuel et modèle conceptuel](DATA_MODEL.md), [authentification](AUTH.md) et [collecte](INGESTION.md).
 
-Limiter le nombre de flux et le travail par invocation selon le plan Cloudflare ; planifier progressivement plutôt que supposer une collecte illimitée. Ajouter Queues seulement si les volumes ou durées le nécessitent.
-
-## Organisation envisagée
-
-- apps/web/ : consultation et administration.
-- apps/worker/ : API, collecte et déclencheur planifié.
-- packages/shared/ : contrats et validations communs.
-- migrations/ : schéma D1 versionné.
-- tests/ : vérifications métier et intégration.
-- scripts/ : export de livraison et contrôles.
-
-Ces répertoires ne sont pas encore implémentés.
-
-## Sécurité et exploitation
-
-Application privée, authentification Microsoft/Hotmail et Apple selon docs/AUTH.md. Isolation des données par utilisateur et rôle Super Admin. Autorisation serveur pour chaque mutation. Validation des URL et redirections pour empêcher SSRF ; neutralisation du HTML des flux ; limites de taille et délais ; journaux sans secrets. Séparer développement et production, bases et secrets compris. Prévoir migrations, sauvegarde D1 et procédure de restauration avant première mise en production.
-
-## Contenus
-
-Conserver uniquement les métadonnées et extraits autorisés, avec provenance et lien original. RSS/Atom et API en priorité. Aucune hypothèse de disponibilité de flux pour les médias cités. IA prévue pour le scheduler, fournisseur et modèle à choisir. Le scheduler pilote la collecte ; les nouveautés sont traitées par lots avec limites configurables, résultats validés et traçabilité. Voir docs/INGESTION.md.
+La cible devra aussi traiter les entrées de flux comme non fiables, limiter les requêtes sortantes et isoler les données par utilisateur. Ne pas interpréter ces exigences de conception comme une protection SSRF ou une isolation déjà implémentée.

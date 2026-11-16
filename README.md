@@ -1,28 +1,28 @@
 # My Press Review
 
-Site de revue de presse personnalisée : agréger les publications de sources choisies, les organiser par thèmes et sujets, et consulter les articles pertinents au même endroit.
+Socle initial d’une application de revue de presse personnalisée. La première itération fournit une interface de démonstration React/Vite et un Worker Cloudflare avec routes API de statut et d’authentification non configurées, un schéma D1 initial et un déclencheur planifié sans collecte. Les contenus et sources de l’interface sont fictifs ; aucune authentification, collecte, IA, persistance des sources de l’interface ou mise en production n’est disponible.
 
-Exemple : thème « Politique française », sujet « Présidentielle française », sources Le Figaro, Le Monde et autres médias sélectionnés. Ces médias sont des exemples, aucun flux n’est encore configuré ou validé.
+## Développer
 
-## État du projet
+Prérequis : Node.js `>=22.12.0` et npm. Depuis la racine du dépôt :
 
-Cadrage initial uniquement. Aucun site, collecteur, compte Cloudflare ou déploiement n’est encore configuré.
+```sh
+npm ci
+npm run db:migrate:local
+npm run dev
+```
 
-## Choix techniques
+Le détail des commandes, du prévisualiseur et des limites locales est dans le [guide de développement](docs/DEVELOPMENT.md).
 
-TypeScript pour le client, l’API et les collecteurs ; React + Vite pour l’interface ; Hono sur Cloudflare Workers pour l’API ; Cloudflare D1 pour les données ; Cron Triggers pour la collecte. Les versions seront fixées lors de l’initialisation du code.
+## Documentation
 
-Cible confirmée : un Worker Cloudflare unique pour les fichiers statiques, l’API et la collecte planifiée toutes les 15 minutes. Application privée avec connexion Microsoft/Hotmail et Apple, configuration personnelle et rôle Super Admin. Le traitement IA classe les nouveautés par thème et sujet ; son rôle éditorial précis reste à confirmer.
-
-## Documents
-
-- [Produit et périmètre](docs/PRODUCT.md)
+- [Produit : livré et projeté](docs/PRODUCT.md)
 - [Architecture](docs/ARCHITECTURE.md)
-- [Modèle de données](docs/DATA_MODEL.md)
-- [Branches et livraison](docs/DELIVERY.md)
-- [Questions et décisions](docs/DECISIONS.md)
-- [Authentification et permissions](docs/AUTH.md)
-- [Collecte et traitement IA](docs/INGESTION.md)
+- [Modèle de données actuel et conceptuel](docs/DATA_MODEL.md)
+- [Authentification : état et cible](docs/AUTH.md)
+- [Collecte et IA : état et cible](docs/INGESTION.md)
 - [Étapes de réalisation](docs/ROADMAP.md)
-- [Consignes des agents](AGENTS.md)
-- [Collaboration : Codex → Claude → GitHub Copilot](docs/WORKFLOW.md)
+- [Branches et livraison](docs/DELIVERY.md)
+- [Décisions et questions](docs/DECISIONS.md)
+- [Workflow des agents](docs/WORKFLOW.md)
+- [Compte rendu de la première itération](docs/iterations/0001.md)

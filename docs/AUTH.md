@@ -1,34 +1,30 @@
 # Authentification et permissions
 
-## Périmètre confirmé
+## État implémenté
 
-Application privée multiutilisateur. Connexion via Microsoft pour les comptes personnels, dont Hotmail/Outlook, et via Sign in with Apple. OAuth 2.0 / OpenID Connect servent à établir l’identité ; aucune permission de lecture des emails n’est demandée.
+Aucune authentification, session applicative ou autorisation n’est implémentée. L’écran de connexion est une maquette ; les boutons Microsoft/Apple sont désactivés et aucun compte n’est créé. L’API annonce ces fournisseurs comme indisponibles et les routes OAuth renvoient `503`. Le schéma D1 contient `users`, `oauth_identities` et `sessions`, sans logique qui les utilise.
 
-## Architecture proposée
+Aucun compte Super Admin n’est provisionné. Ne pas utiliser cette démonstration comme application privée ou comme contrôle d’accès opérationnel.
 
-Flux Authorization Code côté serveur, PKCE lorsque pris en charge par le fournisseur, state et nonce vérifiés. Vérifier signature, émetteur, audience et expiration des jetons avec une bibliothèque maintenue compatible Workers. Les sessions applicatives utilisent des cookies HttpOnly et Secure, une durée limitée et une révocation côté serveur. Adapter SameSite au retour fournisseur, notamment au retour POST Apple ; protéger les mutations contre CSRF.
+## Cible proposée, non implémentée
 
-Identifier un compte externe par fournisseur et identifiant stable, jamais par email seul. Ne pas fusionner automatiquement deux comptes sur la seule égalité d’adresse email, notamment avec les adresses relais Apple. Aucun jeton fournisseur dans le stockage JavaScript du navigateur.
+Connexion OAuth 2.0 / OpenID Connect via Microsoft (comptes personnels, dont Hotmail/Outlook) et Sign in with Apple, sans demander d’accès aux emails. Prévoir Authorization Code côté serveur, PKCE lorsque le fournisseur le prend en charge, et vérification de `state`, `nonce`, signature, émetteur, audience et expiration des jetons avec une bibliothèque maintenue compatible Workers.
 
-## Rôles
+Les sessions applicatives doivent être côté serveur, limitées dans le temps et révocables. Utiliser des cookies `HttpOnly` et `Secure`, avec `SameSite` adapté au retour fournisseur, notamment le retour POST d’Apple ; protéger les mutations contre CSRF. Aucun jeton fournisseur ne doit être stocké dans le JavaScript du navigateur.
 
-- Utilisateur : gérer et consulter ses sources, thèmes, sujets, filtres et contenus.
-- Super Admin : gérer les paramètres globaux, fournisseurs d’authentification, paramètres IA, quotas, état des collectes et admission des utilisateurs selon la politique retenue.
+Identifier un compte externe par fournisseur et identifiant stable, jamais par email seul ; ne pas fusionner automatiquement deux comptes sur la seule égalité d’adresse email, notamment avec les adresses relais Apple. Le rôle est vérifié côté serveur et jamais choisi par le client. Le compte initial Super Admin doit être explicitement provisionné ; le premier inscrit ne devient pas automatiquement administrateur. Journaliser les actions privilégiées sans secrets.
 
-Le rôle est vérifié côté serveur et jamais choisi par le client. Le compte initial Super Admin est provisionné explicitement ; le premier inscrit ne devient pas automatiquement administrateur. Les actions privilégiées sont journalisées sans secrets. L’étendue d’accès aux contenus personnels reste à valider ; pas d’accès implicite.
+L’utilisateur pourra gérer et consulter ses sources, thèmes, sujets, filtres et contenus. Le Super Admin pourra gérer la configuration globale, fournisseurs d’authentification, paramètres IA, quotas, état des collectes et admission selon la politique retenue. L’étendue d’accès du Super Admin aux contenus personnels reste à valider : pas d’accès implicite. Ne pas inclure d’articles ni de configuration personnelle dans les fichiers statiques publics ; la coque statique peut présenter la page de connexion. Invitation, liste autorisée ou validation restent à décider.
 
-## Accès privé
+## Configuration future
 
-Protéger API et contenus ; ne pas inclure d’articles ni de configuration personnelle dans les fichiers statiques publics. La coque statique peut présenter la page de connexion. Le mécanisme d’admission (invitation ou validation) reste à choisir.
-
-## Configuration nécessaire
-
-Enregistrement de l’application Microsoft compatible comptes personnels, identifiant client et retour HTTPS. Pour Apple : configuration développeur, App ID compatible, Services ID, domaine et URL de retour, clé privée et rotation du secret client. Tous les secrets résident dans Cloudflare Secrets. L’interface Super Admin n’expose jamais les secrets existants.
+Enregistrer une application Microsoft compatible avec les comptes personnels, son identifiant client et son URI de retour HTTPS. Pour Apple, configurer un App ID compatible, un Services ID, le domaine et l’URL de retour, ainsi que la clé privée et la rotation du secret client. Placer les secrets dans Cloudflare Secrets ; ne jamais les exposer dans l’interface Super Admin ni les versionner.
 
 Références consultées le 16 novembre 2026 :
-- https://learn.microsoft.com/en-us/entra/identity-platform/v2-protocols-oidc
-- https://developer.apple.com/help/account/capabilities/configure-sign-in-with-apple-for-the-web/
+
+- [Microsoft identity platform et protocole OIDC](https://learn.microsoft.com/en-us/entra/identity-platform/v2-protocols-oidc)
+- [Configurer Sign in with Apple pour le Web](https://developer.apple.com/help/account/capabilities/configure-sign-in-with-apple-for-the-web/)
 
 ## Vérifications à prévoir
 
-Accès anonyme refusé aux données ; impossibilité de lire/modifier celles d’un autre utilisateur ; élévation de rôle refusée ; jetons invalides rejetés ; connexion et déconnexion pour chaque fournisseur ; session révoquée inutilisable ; tentative de liaison de compte non autorisée refusée.
+Refuser l’accès anonyme aux données ; empêcher la lecture/modification des données d’un autre utilisateur et toute élévation de rôle ; rejeter les jetons invalides ; tester connexion/déconnexion pour chaque fournisseur, révocation d’une session et liaison non autorisée d’un compte. Ces exigences ne sont pas des garanties fournies par le prototype.
