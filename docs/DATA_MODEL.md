@@ -30,7 +30,15 @@ Les tables `trial_*` ne référencent aucun utilisateur et ne fournissent aucune
 
 `migrations/0003_article_reading.sql` est additive : elle conserve les lignes `trial_articles` et ajoute `body_text`, `image_url`, `image_credit`, `access_level` (`free`, `restricted`, `unknown`), `publisher_categories`, `theme` et `subtheme`, ainsi que `reading_metadata_version` à `trial_sources`. Ce marqueur protège l’enrichissement des métadonnées lors du passage de l’ancien Worker au nouveau : à la version `0`, le Worker ignore `ETag` et `Last-Modified`, qui ont pu être réécrits par l’ancien runtime entre la migration et sa publication ; il passe à la version `1` uniquement après une collecte réussie par le nouveau Worker. Cela ne contourne ni `next_fetch_at` ni un bail actif. La migration distante a réussi lors du workflow 43951478895. La migration initiale a été appliquée sur D1 local ; la base locale actuelle a ensuite été complétée par Codex pour inclure `reading_metadata_version`.
 
+Pour les recollectes de l’itération 5, le code `4c0d9a0` exige `reading_metadata_version=2` avant d’accepter les nouveaux marqueurs de gratuité : tant que la valeur est inférieure à `2`, il ignore les validateurs `ETag`/`Last-Modified`, puis ne passe à `2` qu’après une collecte réussie. Cela force la relecture des métadonnées RSS afin qu’un ancien marqueur `free` ne fasse pas conserver un accès qui est devenu réservé.
+
 Si une autre base D1 locale a déjà appliqué une ancienne version de `0003` sans cette colonne, ne pas réinitialiser ni effacer la base. Vérifier d’abord `PRAGMA table_info(trial_sources);` et exécuter l’`ALTER TABLE` indiqué dans [DEVELOPMENT.md](DEVELOPMENT.md) uniquement si `reading_metadata_version` est absente.
+
+### Migration 0004 — lecture de pages publiques (déployée)
+
+`migrations/0004_full_article_reading.sql` est additive. Elle ajoute à `trial_articles` `full_text`, `full_status` (`pending`, `available`, `live`, `restricted`, `unavailable`), `full_reason`, `full_fetched_at` et `full_next_fetch_at`. Elle ajoute à `trial_sources` un bail de lecture de page (`article_lease_until`, `article_lease_owner`) et une prochaine collecte (`article_next_fetch_at`), ainsi que `trial_article_robots` pour les règles mises en cache par origine. Les articles et le texte de flux déjà stockés sont conservés.
+
+Seul un corps accepté comme `available` est enregistré dans `full_text`. Le statut `live` indique un corps non écrit dans cette colonne ; s’il résulte d’une lecture à la demande, le texte est livré dans cette réponse seulement. D1 ne conserve que l’état, le motif et les dates nécessaires à la régulation. Les articles réservés ont un corps intégral vide ; les nouveaux `PAYING`/`MEMBER` ne sont pas insérés et les anciens éléments révoqués restent masqués. Le code `4c0d9a0` impose une visibilité API uniquement pour `access_level=free` ou un corps `available`/`live`, en laissant tout `restricted` masqué ; un `unknown` sans texte accepté reste exclu. La migration distante `0004` a été appliquée par le workflow 43960317682, qui a déployé puis promu la release vers `Production` (`8a831a8`).
 
 ## Modèle conceptuel futur — non migré
 

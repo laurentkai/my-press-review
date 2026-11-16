@@ -25,6 +25,10 @@ La révision corrigée `3973252` après `54e8465` ajoute une taxonomie commune d
 
 La lecture présente le texte disponible dans la description ou le résumé du flux, pas le texte intégral de la page éditeur ; si l’accès est inconnu, elle avertit explicitement qu’un abonnement peut être nécessaire. Les statuts d’accès et les images ne confirment pas de droits de republication. L’itération 4, sa revue, ses contrôles locaux et ses limites sont détaillés dans [0004](iterations/0004.md).
 
+## Itération 5 — lecture des articles disponibles (déployée)
+
+Le code corrigé (`4c0d9a0`) limite l’affichage aux articles explicitement `free` ou dont le corps est `available`/`live`, sauf tout marqueur `restricted` qui entraîne masquage ; un statut `unknown` seul ne suffit pas. Les articles d’abonnés et leurs extraits RSS ne sont pas listés, les nouveaux items `PAYING`/`MEMBER` ne sont pas insérés et les détails non admissibles répondent `404`. Aucun contenu réservé n’est obtenu depuis un champ/API de flux. Codex rapporte 270 tests ; Claude ne relève aucun blocage ni majeur et quatre points mineurs restent à suivre. Le workflow `43960317682` a déployé la release ; la vérification navigateur de production et le contrôle mobile à 390 px sont consignés dans [0005](iterations/0005.md).
+
 ## Cible produit, non livrée
 
 Application privée en français où chaque utilisateur configure et consulte sa revue ; un Super Admin gère la configuration globale. Les concepts et capacités ci-dessous sont une cible future, pas des fonctionnalités disponibles.

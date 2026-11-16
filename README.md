@@ -1,12 +1,8 @@
 # My Press Review
 
-Socle d’une application de revue de presse personnalisée. La révision corrigée `3973252152195ae6c3105b4663a84db37dfc7b00` est publiée sur [workers.dev](https://my-press-review.laurent-kaiser.workers.dev) ; elle ajoute le classement déterministe, les images des flux et la lecture interne à l’espace d’essai partagé par code. Cet espace temporaire ne fournit ni comptes individuels/OAuth, ni IA, ni isolation entre ses utilisateurs : ce n’est pas le produit privé final.
+Application de revue de presse en français, publiée sur [workers.dev](https://my-press-review.laurent-kaiser.workers.dev). La version `4c0d9a0` propose thèmes, images et lecture de certaines pages publiques ; elle exclut les articles réservés et les accès non confirmés. L’espace d’essai est partagé par code, sans OAuth, comptes individuels ni IA.
 
-La seconde revue Claude de `54e8465..3973252` ne relève aucun blocage ni problème majeur et confirme la correction des quatre remarques mineures. Le workflow [43951478895](https://github.com/laurentkai/my-press-review/actions/runs/43951478895) a réussi, appliqué la migration distante `0003` et promu la release vers `Production` (`c9c94ef`). Voir [Branches, pipeline et livraison](docs/DELIVERY.md) et le [compte rendu de l’itération 4](docs/iterations/0004.md).
-
-## CI/CD et état de déploiement
-
-Le compte Cloudflare et les paramètres GitHub sont configurés. L’itération 3 avait été livrée par le [run 43942205690](https://github.com/laurentkai/my-press-review/actions/runs/43942205690) ; l’itération 4 est maintenant publiée par le [run 43951478895](https://github.com/laurentkai/my-press-review/actions/runs/43951478895). Voir [Branches, pipeline et livraison](docs/DELIVERY.md), le [catalogue des sources](docs/SOURCES.md) et les [comptes rendus des itérations 3](docs/iterations/0003.md) et [4](docs/iterations/0004.md).
+Le [workflow 43960317682](https://github.com/laurentkai/my-press-review/actions/runs/43960317682) a appliqué la migration `0004`, déployé le Worker puis promu la release vers `Production`. Les 270 tests passent et la seconde revue de Claude ne relève aucun blocage. Les sources compatibles, les vérifications de production et les limites sont détaillées dans le [compte rendu 0005](docs/iterations/0005.md), le [catalogue](docs/SOURCES.md) et le [guide de livraison](docs/DELIVERY.md).
 
 ## Développer
 
@@ -36,3 +32,4 @@ Le détail des commandes, du prévisualiseur et des limites locales est dans le 
 
 - [Compte rendu des sources et de l’accès privé](docs/iterations/0003.md)
 - [Itération 4 — classement, images et lecture](docs/iterations/0004.md)
+- [Itération 5 — lecture des articles disponibles, seconde revue validée](docs/iterations/0005.md)

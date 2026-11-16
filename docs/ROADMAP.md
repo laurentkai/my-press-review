@@ -20,6 +20,10 @@ La revue Claude a conclu à l’absence de blocage ou de nouveau défaut démont
 
 La révision corrigée `3973252` après `54e8465` est déployée : taxonomie commune de thèmes/sous-thèmes avec alias, classement déterministe, images des flux et lecture interne avec lien original et avertissement d’abonnement possible quand l’accès est inconnu. Le workflow 43951478895 a réussi avec 165 tests, build, format et migration distante 0003, puis promu la release vers `Production` (`c9c94ef`). La seconde revue Claude ne relève aucun blocage ni problème majeur et confirme les quatre remarques mineures corrigées. Les vérifications navigateur et les limites sont détaillées dans le [compte rendu](iterations/0004.md).
 
+## Itération 5 — articles disponibles (déployée)
+
+Le code corrigé `4c0d9a0` expose uniquement les articles explicitement libres ou dont le texte est `available`/`live`, sauf marqueur `restricted`, avec filtre API avant limite/comptages et `404` au détail des items exclus. Les articles d’abonnés et `unknown` sans preuve positive restent masqués. Codex rapporte 270 tests ; Claude ne relève aucun blocage ni majeur, avec quatre points mineurs à suivre. Le workflow [43960317682](https://github.com/laurentkai/my-press-review/actions/runs/43960317682) a publié le code et promu `Production` (`8a831a8`). Les preuves et limites sont dans [0005](iterations/0005.md).
+
 ## Suites à planifier — non réalisées
 
 1. Surveiller les états de collecte et la disponibilité des flux en production, sans interpréter une collecte ponctuelle comme une garantie de service.

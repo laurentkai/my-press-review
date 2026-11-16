@@ -38,6 +38,14 @@ La vérification navigateur de production a observé un workspace `200` avec 140
 
 Ces observations sont des instantanés, pas une garantie que toutes les sources sont déjà enrichies en images : les collectes suivantes respectent le prochain horaire dû et l’intervalle minimal de 15 minutes. Les nombres de l’itération 3 (169 articles stockés, 129 affichés) restent historiques et distincts des 140 articles vus après le déploiement de l’itération 4. Voir le [compte rendu de l’itération 4](iterations/0004.md).
 
+## Itération 5 — publiée en production
+
+La première version `f9cf7fd` a reçu une remarque majeure (M1) et cinq remarques mineures de Claude ; le code corrigé est figé à `4c0d9a0a0af992c8ab4a353990e8779062862300`. Codex rapporte 270 tests, typecheck, build, format et `git diff --check` réussis. La seconde revue de Claude ne relève aucun blocage ni remarque majeure et confirme la résolution de M1 et des cinq remarques mineures de la passe précédente ; quatre points mineurs non bloquants restent à suivre. Le workflow [43960317682](https://github.com/laurentkai/my-press-review/actions/runs/43960317682) a réussi la migration distante `0004`, le déploiement et la promotion de la release vers `Production` (`8a831a8`).
+
+Les observations locales de la première version (`f9cf7fd`) restent historiques et ne valident pas `4c0d9a0`. L’analyse Claude hors ligne de quatre exemples HTML reste une comparaison exploratoire, et les benchmarks Node ne garantissent pas la consommation CPU sur Workers/plan Free. Les vérifications navigateur de production sont détaillées dans le [compte rendu 0005](iterations/0005.md) ; elles ne démontrent ni la disponibilité permanente ni une complétude garantie par média.
+
+La vérification post-déploiement a observé 30 articles disponibles et zéro `restricted` dans la liste ; les réponses privées et les lectures DH/Gouvernement/La Libre, dont les cas `live`, réservé et corps introuvable, ainsi que l’interface desktop/mobile, sont détaillés dans [0005](iterations/0005.md). Ce sont des contrôles ponctuels et non une garantie de contenu complet ou de disponibilité permanente.
+
 ## Vérification continue
 
 `.github/workflows/deploy.yml` vérifie les pull requests ciblant `Main` et les pushes sur `Main` (ainsi qu’un déclenchement manuel sur `Main`). Le job de vérification exécute, dans l’ordre :
