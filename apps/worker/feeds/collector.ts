@@ -12,6 +12,7 @@ interface SourceState {
   id: string;
   etag: string | null;
   last_modified: string | null;
+  reading_metadata_version?: number;
 }
 const MAX_BYTES = 1_000_000;
 export async function fetchFeed(
@@ -33,8 +34,10 @@ export async function fetchFeed(
           "application/rss+xml, application/atom+xml, application/xml, text/xml, */*;q=0.2",
         "User-Agent":
           "MyPressReview/0.1 (+https://github.com/laurentkai/my-press-review)",
-        ...(state.etag ? { "If-None-Match": state.etag } : {}),
-        ...(state.last_modified
+        ...(state.reading_metadata_version !== 0 && state.etag
+          ? { "If-None-Match": state.etag }
+          : {}),
+        ...(state.reading_metadata_version !== 0 && state.last_modified
           ? { "If-Modified-Since": state.last_modified }
           : {}),
       },
@@ -121,7 +124,7 @@ export async function collectSource(
   const owner = crypto.randomUUID();
   const state = await db
     .prepare(
-      "UPDATE trial_sources SET lease_owner=?, lease_until=?, last_attempt_at=? WHERE id=? AND enabled=1 AND next_fetch_at<=? AND lease_until<=? RETURNING id, etag, last_modified",
+      "UPDATE trial_sources SET lease_owner=?, lease_until=?, last_attempt_at=? WHERE id=? AND enabled=1 AND next_fetch_at<=? AND lease_until<=? RETURNING id, etag, last_modified, reading_metadata_version",
     )
     .bind(owner, now + 120_000, now, id, now, now)
     .first<SourceState>();
@@ -172,7 +175,7 @@ export async function collectSource(
     writes.push(
       db
         .prepare(
-          "UPDATE trial_sources SET status=?,last_success_at=?,next_fetch_at=?,etag=?,last_modified=?,last_item_count=?,lease_until=0,lease_owner=NULL WHERE id=? AND lease_owner=? AND enabled=1",
+          "UPDATE trial_sources SET status=?,last_success_at=?,next_fetch_at=?,etag=?,last_modified=?,last_item_count=?,reading_metadata_version=1,lease_until=0,lease_owner=NULL WHERE id=? AND lease_owner=? AND enabled=1",
         )
         .bind(
           result.status,

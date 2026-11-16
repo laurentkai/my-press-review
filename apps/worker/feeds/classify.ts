@@ -188,6 +188,46 @@ const rules: Rule[] = [
   },
 ];
 
+// Publisher labels are metadata signals only: words such as "monde" or
+// "people" in prose are too ambiguous to classify an article on their own.
+const metadataAliases: Rule[] = [
+  {
+    theme: "International",
+    subtheme: null,
+    keywords: ["monde", "international"],
+  },
+  { theme: "Sport", subtheme: null, keywords: ["sports"] },
+  { theme: "Sport", subtheme: "Football", keywords: ["diables rouges"] },
+  {
+    theme: "Société",
+    subtheme: "Justice",
+    keywords: ["faits divers", "justice"],
+  },
+  { theme: "Société", subtheme: null, keywords: ["transports", "mobilite"] },
+  { theme: "Culture", subtheme: null, keywords: ["people", "medias"] },
+  {
+    theme: "Économie",
+    subtheme: null,
+    keywords: [
+      "conjoncture",
+      "finance",
+      "economy",
+      "economic indicators",
+      "economic news",
+    ],
+  },
+  {
+    theme: "Économie",
+    subtheme: "Marchés",
+    keywords: ["markets", "stock market news", "marches"],
+  },
+  {
+    theme: "Sciences et technologies",
+    subtheme: "Technologie",
+    keywords: ["tech web"],
+  },
+];
+
 function normalize(value: string): string {
   return value
     .normalize("NFD")
@@ -219,6 +259,9 @@ const compiledTopics = topics
   .map((topic) => ({
     name: topic.name,
     normalized: normalize(topic.name),
+    aliases: metadataAliases
+      .filter((rule) => rule.theme === topic.name)
+      .map((rule) => ({ ...rule, keywords: rule.keywords.map(normalize) })),
     rules: rules
       .filter((rule) => rule.theme === topic.name)
       .map((rule) => ({ ...rule, keywords: rule.keywords.map(normalize) })),
@@ -247,6 +290,24 @@ export function classifyArticle(
     let score = genericScore;
     let subtheme: string | null = null;
     let bestSubScore = 0;
+    for (const alias of topic.aliases) {
+      const aliasScore =
+        (categories.some((value) =>
+          alias.keywords.some((keyword) => contains(value, keyword)),
+        )
+          ? 100
+          : 0) +
+        (sections.some((value) =>
+          alias.keywords.some((keyword) => contains(value, keyword)),
+        )
+          ? 60
+          : 0);
+      score += aliasScore;
+      if (alias.subtheme !== null && aliasScore > bestSubScore) {
+        bestSubScore = aliasScore;
+        subtheme = alias.subtheme;
+      }
+    }
     for (const rule of topicRules) {
       const ruleScore = rule.keywords.reduce(
         (sum, keyword) =>

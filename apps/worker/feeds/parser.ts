@@ -80,7 +80,12 @@ export function parseFeed(xml: string, source: FeedSource): FeedItem[] {
   let itemDepth = 0;
   let seen = 0;
   let categories: string[] = [];
-  let images: { url: string; priority: number }[] = [];
+  let images: { url: string; priority: number; creditScopes: string[][] }[] =
+    [];
+  let itemCredits: string[] = [];
+  let mediaScopes: { depth: number; credits: string[] }[] = [];
+  let activeCredit: { depth: number; credits: string[]; text: string } | null =
+    null;
   let field: string | null = null;
   const items: FeedItem[] = [];
   const fields = [
@@ -94,9 +99,12 @@ export function parseFeed(xml: string, source: FeedSource): FeedItem[] {
     "dpp:paid",
     "dcterms:accessrights",
     "category",
-    "media:credit",
   ];
   const append = (text: string) => {
+    if (activeCredit) {
+      activeCredit.text = (activeCredit.text + text).slice(0, 2000);
+      return;
+    }
     if (
       item &&
       field &&
@@ -123,7 +131,31 @@ export function parseFeed(xml: string, source: FeedSource): FeedItem[] {
       item = {};
       categories = [];
       images = [];
+      itemCredits = [];
+      mediaScopes = [];
+      activeCredit = null;
       itemDepth = stack.length;
+    }
+    // Credits inherit from item/group to content, but never from a sibling
+    // media object (including one rejected as a video or foreign origin).
+    if (
+      item &&
+      stack.length <= itemDepth + 2 &&
+      ["media:group", "media:content", "media:thumbnail", "enclosure"].includes(
+        name,
+      )
+    )
+      mediaScopes.push({ depth: stack.length, credits: [] });
+    if (item && name === "media:credit" && stack.length <= itemDepth + 3) {
+      const lastScope = mediaScopes.at(-1);
+      const parent =
+        lastScope?.depth === stack.length - 1 ? lastScope : undefined;
+      if (parent || stack.length === itemDepth + 1)
+        activeCredit = {
+          depth: stack.length,
+          credits: parent?.credits ?? itemCredits,
+          text: "",
+        };
     }
     if (item && stack.length === itemDepth + 1 && fields.includes(name)) {
       field = name;
@@ -155,12 +187,14 @@ export function parseFeed(xml: string, source: FeedSource): FeedItem[] {
       )
         images.push({
           url: candidate,
+          creditScopes: [...mediaScopes]
+            .reverse()
+            .map((scope) => scope.credits)
+            .concat([itemCredits]),
           priority:
             name === "media:content" ? 0 : name === "media:thumbnail" ? 1 : 2,
         });
     }
-    if (item && name === "media:credit" && stack.length === itemDepth + 2)
-      field = name;
     if (
       item &&
       root === "feed" &&
@@ -173,6 +207,12 @@ export function parseFeed(xml: string, source: FeedSource): FeedItem[] {
   parser.on("text", append);
   parser.on("cdata", append);
   parser.on("closetag", () => {
+    if (activeCredit && activeCredit.depth === stack.length) {
+      if (activeCredit.credits.length < 4)
+        activeCredit.credits.push(plainText(activeCredit.text, 200));
+      activeCredit = null;
+    }
+    if (mediaScopes.at(-1)?.depth === stack.length) mediaScopes.pop();
     if (
       item &&
       field === "category" &&
@@ -192,6 +232,7 @@ export function parseFeed(xml: string, source: FeedSource): FeedItem[] {
             ? "restricted"
             : "unknown";
       const description = item.description ?? item.summary ?? "";
+      const image = images.sort((a, b) => a.priority - b.priority)[0];
       if (title && url && item["dpp:paid"]?.trim().toLowerCase() !== "true")
         items.push({
           url,
@@ -199,9 +240,13 @@ export function parseFeed(xml: string, source: FeedSource): FeedItem[] {
           excerpt: plainText(description, 300),
           bodyText:
             accessLevel === "restricted" ? "" : readingText(description),
-          imageUrl:
-            images.sort((a, b) => a.priority - b.priority)[0]?.url ?? null,
-          imageCredit: plainText(item["media:credit"] ?? "", 200),
+          imageUrl: image?.url ?? null,
+          imageCredit: (
+            image?.creditScopes.find((scope) => scope.some(Boolean)) ?? []
+          )
+            .filter(Boolean)
+            .join(" · ")
+            .slice(0, 200),
           accessLevel,
           categories: categories.filter(Boolean),
           publishedAt: publicationDate(

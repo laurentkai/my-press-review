@@ -153,3 +153,117 @@ describe("classement déterministe des articles", () => {
     }
   });
 });
+
+describe("synonymes des rubriques et catégories éditeur", () => {
+  const labels: [string, string, string | null][] = [
+    ["monde", "International", null],
+    ["international", "International", null],
+    ["sports", "Sport", null],
+    ["faits-divers", "Société", "Justice"],
+    ["justice", "Société", "Justice"],
+    ["people", "Culture", null],
+    ["médias", "Culture", null],
+    ["conjoncture", "Économie", null],
+    ["finance", "Économie", null],
+    ["transports", "Société", null],
+    ["mobilité", "Société", null],
+    ["tech-web", "Sciences et technologies", "Technologie"],
+    ["Diables Rouges", "Sport", "Football"],
+    ["economy", "Économie", null],
+    ["economic-indicators", "Économie", null],
+    ["stock-market-news", "Économie", "Marchés"],
+    ["markets", "Économie", "Marchés"],
+  ];
+  it.each(labels)("classe la catégorie %s", (label, theme, subtheme) => {
+    expect(
+      classifyArticle({ ...article("Une annonce"), categories: [label] }, "dh"),
+    ).toEqual({ theme, subtheme });
+  });
+  it.each(labels)("classe la rubrique %s", (label, theme, subtheme) => {
+    expect(
+      classifyArticle(
+        article(
+          "Une annonce",
+          "",
+          `https://example.test/news/${encodeURIComponent(label)}/article`,
+        ),
+        "7sur7",
+      ),
+    ).toEqual({ theme, subtheme });
+  });
+  it("affine finance en Marchés seulement en présence d’un signal précis", () => {
+    expect(
+      classifyArticle(
+        { ...article("Le CAC 40 progresse"), categories: ["Finance"] },
+        "investing",
+      ),
+    ).toEqual({ theme: "Économie", subtheme: "Marchés" });
+    expect(
+      classifyArticle(
+        article(
+          "Une annonce",
+          "",
+          "https://fr.investing.com/news/economy-news/annonce-123",
+        ),
+        "investing",
+      ),
+    ).toEqual({ theme: "Économie", subtheme: null });
+  });
+  it("donne aux synonymes de métadonnées priorité sur les mots du texte", () => {
+    expect(
+      classifyArticle(
+        { ...article("Le gouvernement réagit"), categories: ["Sports"] },
+        "dh",
+      ),
+    ).toEqual({ theme: "Sport", subtheme: null });
+    expect(
+      classifyArticle(
+        article(
+          "Le parlement débat",
+          "",
+          "https://example.test/people/annonce",
+        ),
+        "7sur7",
+      ),
+    ).toEqual({ theme: "Culture", subtheme: null });
+  });
+  it("ne laisse pas la géographie voler le football des Diables Rouges", () => {
+    expect(
+      classifyArticle(
+        {
+          ...article(
+            "Une nouvelle annonce",
+            "",
+            "https://www.dhnet.be/belgique/article",
+          ),
+          categories: ["Belgique", "Diables Rouges"],
+        },
+        "dh",
+      ),
+    ).toEqual({ theme: "Sport", subtheme: "Football" });
+  });
+  it.each([
+    "Le monde du football évolue",
+    "Tout le monde arrive",
+    "La mobilité des oiseaux",
+    "Une plateforme multimedias",
+    "Un fait diversement apprécié",
+  ])("ne traite pas les alias comme mots-clés de prose : %s", (title) => {
+    expect(classifyArticle(article(title), "dh")).toEqual({
+      theme: title.includes("football") ? "Sport" : "Autres",
+      subtheme: title.includes("football") ? "Football" : null,
+    });
+  });
+  it("ignore les alias dans le domaine, la requête et le slug final", () => {
+    expect(
+      classifyArticle(
+        article(
+          "Une annonce",
+          "",
+          "https://finance.example.test/news/people?category=sports",
+        ),
+        "dh",
+      ),
+    ).toEqual({ theme: "Autres", subtheme: null });
+  });
+});

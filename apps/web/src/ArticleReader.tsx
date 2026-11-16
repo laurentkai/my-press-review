@@ -113,7 +113,9 @@ export function ArticleReader({
         <span>
           {current.accessLevel === "restricted"
             ? "Accès réservé chez l’éditeur"
-            : "Texte du flux original"}
+            : current.accessLevel === "unknown"
+              ? "Conditions d’accès non précisées"
+              : "Texte du flux original"}
         </span>
       </div>
       <a
@@ -128,7 +130,9 @@ export function ArticleReader({
       <div className="inline-note reader-disclosure">
         {current.accessLevel === "restricted"
           ? "L’éditeur réserve cet article à ses abonnés ou membres. Seul l’extrait du flux est présenté ici."
-          : "Vous lisez le texte transmis par le flux de l’éditeur. Il peut être abrégé : ce n’est pas une garantie de texte intégral."}
+          : current.accessLevel === "unknown"
+            ? "Le statut d’accès de cet article n’est pas connu : un abonnement peut être requis chez l’éditeur. Seul le texte disponible dans le flux est présenté ici, sans garantie de texte intégral."
+            : "Vous lisez le texte transmis par le flux de l’éditeur. Il peut être abrégé : ce n’est pas une garantie de texte intégral."}
       </div>
       {error ? (
         <div role="alert" className="inline-note form-error">

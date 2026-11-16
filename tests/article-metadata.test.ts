@@ -256,3 +256,59 @@ describe("persistance des métadonnées et reclassement à la collecte", () => {
     expect(fetcher).toHaveBeenCalledTimes(2);
   });
 });
+
+describe("review regressions: scoped credits and metadata upgrade", () => {
+  it("keeps credits with the selected media, including group inheritance", () => {
+    const parsed =
+      parse(`<media:content url="https://www.dhnet.be/video.mp4" type="video/mp4"><media:credit>Video agency</media:credit></media:content>
+      <media:group><media:credit>Group agency</media:credit><media:content url="https://www.dhnet.be/selected.jpg" type="image/jpeg"><media:credit>Photo author</media:credit></media:content></media:group>
+      <media:content url="https://www.dhnet.be/other.jpg" type="image/jpeg"><media:credit>Other author</media:credit></media:content>`);
+    expect(parsed).toMatchObject({
+      imageUrl: "https://www.dhnet.be/selected.jpg",
+      imageCredit: "Photo author",
+    });
+  });
+  it("does not borrow a rejected image's credit for a sibling", () => {
+    expect(
+      parse(
+        `<media:content url="https://attacker.test/no.jpg"><media:credit>Wrong author</media:credit></media:content><media:content url="https://www.dhnet.be/selected.jpg"/>`,
+      ),
+    ).toMatchObject({
+      imageUrl: "https://www.dhnet.be/selected.jpg",
+      imageCredit: "",
+    });
+  });
+  it("does not let an old worker's validator suppress the first metadata fetch", async () => {
+    const value = memoryD1();
+    databases.push(value);
+    const { db, sqlite } = value;
+    sqlite.exec(
+      `UPDATE trial_sources SET etag='"old-worker"',last_modified='Mon, 16 Nov 2026 10:00:00 GMT' WHERE id='dh'`,
+    );
+    const fetcher = vi.fn<typeof fetch>().mockImplementation(
+      async () =>
+        new Response(rss(item("<description>Metadata</description>")), {
+          headers: { etag: '"new-worker"' },
+        }),
+    );
+    await collectSource(db, "dh", fetcher);
+    expect(fetcher.mock.calls[0][1]?.headers).not.toHaveProperty(
+      "If-None-Match",
+    );
+    expect(fetcher.mock.calls[0][1]?.headers).not.toHaveProperty(
+      "If-Modified-Since",
+    );
+    expect(
+      sqlite
+        .prepare(
+          "SELECT reading_metadata_version FROM trial_sources WHERE id='dh'",
+        )
+        .get()?.reading_metadata_version,
+    ).toBe(1);
+    sqlite.exec("UPDATE trial_sources SET next_fetch_at=0 WHERE id='dh'");
+    await collectSource(db, "dh", fetcher);
+    expect(fetcher.mock.calls[1][1]?.headers).toMatchObject({
+      "If-None-Match": '"new-worker"',
+    });
+  });
+});
