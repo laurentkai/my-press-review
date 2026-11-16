@@ -6,6 +6,7 @@ import {
 } from "./catalog";
 import { FeedError, parseFeed } from "./parser";
 import { classifyArticle } from "./classify";
+import { scheduledArticles } from "./article-collector";
 import { digest } from "../auth";
 
 interface SourceState {
@@ -142,7 +143,11 @@ export async function collectSource(
           .prepare(
             `INSERT INTO trial_articles(id,source_id,url,title,excerpt,published_at,collected_at,body_text,image_url,image_credit,access_level,publisher_categories,theme,subtheme)
         SELECT ?,?,?,?,?,?,?,?,?,?,?,?,?,? WHERE EXISTS(SELECT 1 FROM trial_sources WHERE id=? AND enabled=1 AND lease_owner=? AND lease_until>?)
-        ON CONFLICT(source_id,url) DO UPDATE SET title=excluded.title,excerpt=excluded.excerpt,published_at=COALESCE(excluded.published_at,trial_articles.published_at),collected_at=excluded.collected_at,body_text=excluded.body_text,image_url=excluded.image_url,image_credit=excluded.image_credit,access_level=excluded.access_level,publisher_categories=excluded.publisher_categories,theme=excluded.theme,subtheme=excluded.subtheme`,
+        ON CONFLICT(source_id,url) DO UPDATE SET title=excluded.title,excerpt=excluded.excerpt,published_at=COALESCE(excluded.published_at,trial_articles.published_at),collected_at=excluded.collected_at,body_text=excluded.body_text,image_url=excluded.image_url,image_credit=excluded.image_credit,access_level=excluded.access_level,publisher_categories=excluded.publisher_categories,theme=excluded.theme,subtheme=excluded.subtheme,
+        full_text=CASE WHEN excluded.access_level='restricted' THEN '' ELSE trial_articles.full_text END,
+        full_status=CASE WHEN excluded.access_level='restricted' THEN 'restricted' WHEN trial_articles.access_level='restricted' AND excluded.access_level='free' THEN 'pending' ELSE trial_articles.full_status END,
+        full_reason=CASE WHEN excluded.access_level='restricted' THEN 'access_restricted' WHEN trial_articles.access_level='restricted' AND excluded.access_level='free' THEN '' ELSE trial_articles.full_reason END,
+        full_next_fetch_at=CASE WHEN trial_articles.access_level='restricted' AND excluded.access_level='free' THEN 0 ELSE trial_articles.full_next_fetch_at END`,
           )
           .bind(
             articleId,
@@ -236,6 +241,7 @@ export async function scheduledCollection(db: D1Database, now = Date.now()) {
     .bind(now, now)
     .first<{ id: string }>();
   if (state) await collectSource(db, state.id);
+  else await scheduledArticles(db, now);
   await db.batch([
     db.prepare("DELETE FROM trial_sessions WHERE expires_at<=?").bind(now),
     db.prepare("DELETE FROM trial_login_limits WHERE expires_at<=?").bind(now),

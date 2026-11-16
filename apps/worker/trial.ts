@@ -3,6 +3,8 @@ import { limitedBody } from "./body";
 import type { Bindings } from "./index";
 import { trialCatalog } from "./feeds/catalog";
 import { classifyArticle } from "./feeds/classify";
+import { collectArticle, articlePolicy } from "./feeds/article-collector";
+import type { FullTextStatus } from "../../packages/shared/types";
 import { collectSource } from "./feeds/collector";
 
 interface State {
@@ -29,6 +31,11 @@ interface ArticleRow {
   theme: string | null;
   subtheme: string | null;
   body_text?: string;
+  full_text?: string;
+  full_status: FullTextStatus;
+  full_reason: string;
+  full_fetched_at: number | null;
+  full_next_fetch_at: number;
 }
 function articleResponse(item: ArticleRow) {
   const categories = JSON.parse(item.publisher_categories) as string[];
@@ -45,8 +52,11 @@ function articleResponse(item: ArticleRow) {
     collectedAt: item.collected_at,
     imageUrl: item.image_url,
     imageCredit: item.image_credit,
-    accessLevel: item.access_level,
+    accessLevel:
+      item.full_status === "restricted" ? "restricted" : item.access_level,
     publisherCategories: categories,
+    fullTextStatus:
+      item.access_level === "restricted" ? "restricted" : item.full_status,
     ...topic,
   };
 }
@@ -59,7 +69,20 @@ export async function readArticle(c: Context<{ Bindings: Bindings }>) {
   if (!row) return c.json({ error: "NOT_FOUND" }, 404);
   return c.json({
     ...articleResponse(row),
-    bodyText: row.access_level === "restricted" ? "" : (row.body_text ?? ""),
+    bodyText:
+      row.access_level === "restricted" || row.full_status === "restricted"
+        ? ""
+        : row.full_status === "available"
+          ? (row.full_text ?? "")
+          : (row.body_text ?? ""),
+    contentKind:
+      row.full_status === "available" && row.access_level !== "restricted"
+        ? "article"
+        : "feed",
+    fullTextReason:
+      row.full_reason || articlePolicy(row.source_id, row.access_level) || "",
+    fullTextFetchedAt: row.full_fetched_at,
+    fullTextNextAttemptAt: row.full_next_fetch_at,
   });
 }
 export async function workspace(c: Context<{ Bindings: Bindings }>) {
@@ -67,7 +90,7 @@ export async function workspace(c: Context<{ Bindings: Bindings }>) {
     "SELECT s.*, (SELECT COUNT(*) FROM trial_articles a WHERE a.source_id=s.id) AS article_count FROM trial_sources s",
   ).all<State>();
   const rows = await c.env.DB.prepare(
-    `SELECT * FROM (SELECT a.id,a.source_id,a.url,a.title,a.excerpt,a.published_at,a.collected_at,a.image_url,a.image_credit,a.access_level,a.publisher_categories,a.theme,a.subtheme, ROW_NUMBER() OVER(PARTITION BY source_id ORDER BY COALESCE(published_at,collected_at) DESC,a.id) AS position FROM trial_articles a JOIN trial_sources s ON s.id=a.source_id WHERE s.enabled=1) WHERE position<=20 ORDER BY COALESCE(published_at,collected_at) DESC,id`,
+    `SELECT * FROM (SELECT a.id,a.source_id,a.url,a.title,a.excerpt,a.published_at,a.collected_at,a.image_url,a.image_credit,a.access_level,a.publisher_categories,a.theme,a.subtheme,a.full_status,a.full_reason,a.full_fetched_at,a.full_next_fetch_at, ROW_NUMBER() OVER(PARTITION BY source_id ORDER BY COALESCE(published_at,collected_at) DESC,a.id) AS position FROM trial_articles a JOIN trial_sources s ON s.id=a.source_id WHERE s.enabled=1) WHERE position<=20 ORDER BY COALESCE(published_at,collected_at) DESC,id`,
   ).all<ArticleRow>();
   return c.json({
     sources: trialCatalog.map((source) => {
@@ -106,4 +129,10 @@ export async function refreshSource(c: Context<{ Bindings: Bindings }>) {
   if (!trialCatalog.some((entry) => entry.id === c.req.param("id")))
     return c.json({ error: "NOT_FOUND" }, 404);
   return c.json(await collectSource(c.env.DB, c.req.param("id")!));
+}
+
+export async function retrieveArticle(c: Context<{ Bindings: Bindings }>) {
+  const result = await collectArticle(c.env.DB, c.req.param("id")!);
+  if (result.status === "missing") return c.json({ error: "NOT_FOUND" }, 404);
+  return c.json(result);
 }

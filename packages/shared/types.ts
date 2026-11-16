@@ -30,7 +30,11 @@ export interface TrialSource {
   nextFetchAt: number;
   articleCount: number;
 }
+export type FullTextStatus =
+  "pending" | "available" | "live" | "restricted" | "unavailable";
+
 export interface TrialArticle {
+  fullTextStatus?: FullTextStatus;
   theme: string;
   subtheme: string | null;
   imageUrl: string | null;
@@ -52,4 +56,8 @@ export interface TrialWorkspace {
 
 export interface TrialArticleDetail extends TrialArticle {
   bodyText: string;
+  contentKind?: "feed" | "article";
+  fullTextReason?: string;
+  fullTextFetchedAt?: number | null;
+  fullTextNextAttemptAt?: number;
 }

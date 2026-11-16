@@ -38,6 +38,29 @@ export function PublisherImage({
     </figure>
   );
 }
+const fullTextMessages: Record<string, string> = {
+  publisher_policy:
+    "L’éditeur limite la récupération automatisée de ce contenu.",
+  source_unverified:
+    "La lecture complète n’est pas encore disponible pour cette source.",
+  access_unverified:
+    "Le caractère gratuit de cet article n’est pas confirmé par le flux.",
+  robots_disallowed:
+    "L’éditeur refuse la récupération automatique de cet article.",
+  robots_unavailable:
+    "Les règles de collecte de l’éditeur sont momentanément indisponibles.",
+  blocked_403: "L’éditeur a refusé la récupération de cette page.",
+  consent_required: "L’éditeur demande un consentement sur son site.",
+  access_restricted: "L’éditeur réserve cet article à ses abonnés ou membres.",
+  source_busy:
+    "La récupération de cette source est déjà en cours ou attend son prochain créneau.",
+  incomplete_body: "La page ne fournit qu’un aperçu identifiable de l’article.",
+  body_too_short:
+    "Le corps de l’article n’a pas pu être distingué d’un simple extrait.",
+  too_large: "La page dépasse la limite de lecture du service.",
+  timeout: "L’éditeur n’a pas répondu à temps.",
+  rate_limited: "L’éditeur demande d’espacer les requêtes.",
+};
 export function ArticleReader({
   article,
   source,
@@ -52,38 +75,109 @@ export function ArticleReader({
   const [detail, setDetail] = useState<TrialArticleDetail | null>(null);
   const [error, setError] = useState("");
   const [attempt, setAttempt] = useState(0);
+  const [retrieving, setRetrieving] = useState(false);
   useEffect(() => {
     const abort = new AbortController();
     setDetail(null);
     setError("");
-    fetch(`/api/trial/articles/${article.id}`, {
-      signal: abort.signal,
-      cache: "no-store",
-    })
-      .then(async (response) => {
-        if (abort.signal.aborted) return;
+    setRetrieving(false);
+    const read = async () => {
+      const response = await fetch(`/api/trial/articles/${article.id}`, {
+        signal: abort.signal,
+        cache: "no-store",
+      });
+      if (response.status === 401) {
+        onExpired();
+        return null;
+      }
+      if (!response.ok)
+        throw new Error(
+          response.status === 404
+            ? "Cet article n’est plus disponible dans votre revue."
+            : "Impossible de charger la lecture.",
+        );
+      return (await response.json()) as TrialArticleDetail;
+    };
+    const load = async () => {
+      const value = await read();
+      if (!value || abort.signal.aborted) return;
+      setDetail(value);
+      const blocked = [
+        "publisher_policy",
+        "source_unverified",
+        "access_unverified",
+        "robots_disallowed",
+        "access_restricted",
+      ].includes(value.fullTextReason ?? "");
+      if (
+        !value.fullTextStatus ||
+        value.contentKind === "article" ||
+        value.accessLevel === "restricted" ||
+        value.fullTextStatus === "restricted" ||
+        blocked ||
+        (value.fullTextNextAttemptAt ?? 0) > Date.now()
+      )
+        return;
+      setRetrieving(true);
+      try {
+        const response = await fetch(
+          `/api/trial/articles/${article.id}/content`,
+          { method: "POST", signal: abort.signal, cache: "no-store" },
+        );
         if (response.status === 401) {
           onExpired();
           return;
         }
         if (!response.ok)
-          throw new Error(
-            response.status === 404
-              ? "Cet article n’est plus disponible dans votre revue."
-              : "Impossible de charger la lecture.",
-          );
-        const value = (await response.json()) as TrialArticleDetail;
-        if (!abort.signal.aborted) setDetail(value);
-      })
-      .catch((error: unknown) => {
-        if (!abort.signal.aborted)
-          setError(
-            error instanceof Error ? error.message : "Lecture indisponible.",
-          );
-      });
+          throw new Error("Impossible de récupérer l’article pour le moment.");
+        const result = (await response.json()) as {
+          liveText?: string;
+          status: string;
+          reason: string;
+          nextAttemptAt: number;
+        };
+        if (abort.signal.aborted) return;
+        if (result.liveText)
+          setDetail({
+            ...value,
+            bodyText: result.liveText,
+            contentKind: "article",
+            fullTextStatus: "live",
+            fullTextReason: result.reason,
+            fullTextNextAttemptAt: result.nextAttemptAt,
+          });
+        else {
+          const updated = await read();
+          if (updated && !abort.signal.aborted)
+            setDetail({
+              ...updated,
+              fullTextReason:
+                result.reason === "source_busy"
+                  ? result.reason
+                  : updated.fullTextReason,
+              fullTextNextAttemptAt: Math.max(
+                updated.fullTextNextAttemptAt ?? 0,
+                result.nextAttemptAt,
+              ),
+            });
+        }
+      } finally {
+        if (!abort.signal.aborted) setRetrieving(false);
+      }
+    };
+    load().catch((error: unknown) => {
+      if (!abort.signal.aborted)
+        setError(
+          error instanceof Error ? error.message : "Lecture indisponible.",
+        );
+    });
     return () => abort.abort();
   }, [article.id, attempt, onExpired]);
-  const current = detail ?? article;
+  const current =
+    detail?.fullTextStatus === "restricted"
+      ? { ...detail, accessLevel: "restricted" as const }
+      : (detail ?? article);
+  const isArticle = detail?.contentKind === "article";
   const paragraphs = detail?.bodyText.split(/\n+/).filter(Boolean) ?? [];
   return (
     <article className="reading-view trial-reading">
@@ -111,11 +205,11 @@ export function ArticleReader({
           )}
         </span>
         <span>
-          {current.accessLevel === "restricted"
-            ? "Accès réservé chez l’éditeur"
-            : current.accessLevel === "unknown"
-              ? "Conditions d’accès non précisées"
-              : "Texte du flux original"}
+          {isArticle
+            ? "Article en lecture"
+            : current.accessLevel === "restricted"
+              ? "Accès réservé chez l’éditeur"
+              : "Extrait du flux"}
         </span>
       </div>
       <a
@@ -128,13 +222,50 @@ export function ArticleReader({
       </a>
       <PublisherImage article={current} reader />
       <div className="inline-note reader-disclosure">
-        {current.accessLevel === "restricted"
-          ? "L’éditeur réserve cet article à ses abonnés ou membres. Seul l’extrait du flux est présenté ici."
-          : current.accessLevel === "unknown"
-            ? "Le statut d’accès de cet article n’est pas connu : un abonnement peut être requis chez l’éditeur. Seul le texte disponible dans le flux est présenté ici, sans garantie de texte intégral."
-            : "Vous lisez le texte transmis par le flux de l’éditeur. Il peut être abrégé : ce n’est pas une garantie de texte intégral."}
+        {isArticle
+          ? detail.fullTextStatus === "live"
+            ? "Texte récupéré à la demande depuis la page de l’éditeur, sans archivage dans La Revue."
+            : "Texte récupéré depuis la page originale. La mise en forme et les contenus interactifs restent disponibles chez l’éditeur."
+          : current.accessLevel === "restricted"
+            ? "L’éditeur réserve cet article à ses abonnés ou membres. Seul l’extrait du flux est présenté ici."
+            : retrieving
+              ? "Récupération du corps de l’article chez l’éditeur… L’extrait reste affiché pendant le chargement."
+              : `${fullTextMessages[detail?.fullTextReason ?? ""] ?? "Le corps de l’article n’est pas disponible ici."} Seul l’extrait du flux est affiché ; il ne s’agit pas du texte intégral.`}
+        {retrieving && <p role="status">Chargement de l’article…</p>}
+        {!isArticle &&
+        !retrieving &&
+        detail?.fullTextNextAttemptAt &&
+        detail.fullTextNextAttemptAt > Date.now() ? (
+          <p>
+            Prochaine tentative possible après{" "}
+            {new Intl.DateTimeFormat("fr-BE", {
+              timeStyle: "short",
+              timeZone: "Europe/Brussels",
+            }).format(new Date(detail.fullTextNextAttemptAt))}
+            .
+          </p>
+        ) : null}
+        {!isArticle &&
+          !retrieving &&
+          current.accessLevel !== "restricted" &&
+          detail?.fullTextStatus &&
+          ![
+            "publisher_policy",
+            "source_unverified",
+            "access_unverified",
+            "robots_disallowed",
+            "access_restricted",
+          ].includes(detail.fullTextReason ?? "") && (
+            <button
+              className="text-button"
+              disabled={(detail.fullTextNextAttemptAt ?? 0) > Date.now()}
+              onClick={() => setAttempt((value) => value + 1)}
+            >
+              Rechercher le texte complet
+            </button>
+          )}
       </div>
-      {error ? (
+      {error && (
         <div role="alert" className="inline-note form-error">
           {error}{" "}
           <button
@@ -144,10 +275,13 @@ export function ArticleReader({
             Réessayer
           </button>
         </div>
-      ) : !detail ? (
-        <p role="status" className="muted">
-          Chargement du texte disponible…
-        </p>
+      )}
+      {!detail ? (
+        error ? null : (
+          <p role="status" className="muted">
+            Chargement du texte disponible…
+          </p>
+        )
       ) : (
         <div className="reading-body">
           {paragraphs.length ? (

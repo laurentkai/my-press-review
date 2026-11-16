@@ -195,10 +195,22 @@ export function PrivateWorkspace({ onExit }: { onExit: () => void }) {
     setError("");
     setNotice("Collecte des sources arrivées à échéance…");
     try {
-      for (const source of data.sources.filter(
+      const active = data.sources.filter(
         (entry) => entry.enabled && entry.feed,
-      ))
-        await update(`/api/trial/sources/${source.id}/refresh`, "POST");
+      );
+      let failed = false;
+      for (let index = 0; index < active.length; index += 2) {
+        const results = await Promise.allSettled(
+          active
+            .slice(index, index + 2)
+            .map((source) =>
+              update(`/api/trial/sources/${source.id}/refresh`, "POST"),
+            ),
+        );
+        if (results.some((result) => result.status === "rejected"))
+          failed = true;
+      }
+      if (failed) throw new Error("Une collecte a échoué.");
       await load();
       setNotice(
         "Vérification terminée. Consultez les états par source ; les flux déjà récents ne sont pas sollicités à nouveau.",

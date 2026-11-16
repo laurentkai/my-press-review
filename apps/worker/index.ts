@@ -6,7 +6,13 @@ import {
   logoutTrial,
   sameOrigin,
 } from "./auth";
-import { workspace, toggleSource, refreshSource, readArticle } from "./trial";
+import {
+  workspace,
+  toggleSource,
+  refreshSource,
+  readArticle,
+  retrieveArticle,
+} from "./trial";
 import { scheduledCollection } from "./feeds/collector";
 
 export interface Bindings {
@@ -34,7 +40,7 @@ app.use("/api/*", async (c, next) => {
   }
   const trialRoute =
     c.req.path === "/api/trial/workspace" ||
-    /^\/api\/trial\/articles\/[a-f0-9]{64}$/.test(c.req.path) ||
+    /^\/api\/trial\/articles\/[a-f0-9]{64}(?:\/content)?$/.test(c.req.path) ||
     c.req.path === "/api/trial/logout" ||
     /^\/api\/trial\/sources\/[a-z0-9]+(?:\/refresh)?$/.test(c.req.path);
   if (trialRoute && (await trialAuthenticated(c))) {
@@ -66,6 +72,7 @@ app.post("/api/trial/login", loginTrial);
 app.post("/api/trial/logout", logoutTrial);
 app.get("/api/trial/workspace", workspace);
 app.get("/api/trial/articles/:id", readArticle);
+app.post("/api/trial/articles/:id/content", retrieveArticle);
 app.put("/api/trial/sources/:id", toggleSource);
 app.post("/api/trial/sources/:id/refresh", refreshSource);
 app.all("/api/auth/*", (c) =>
