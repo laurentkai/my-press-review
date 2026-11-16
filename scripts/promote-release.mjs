@@ -1,49 +1,59 @@
-import { execFileSync } from "node:child_process";
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { join } from "node:path";
+import { assertCurrentMain, gitRunner } from "./git-utils.mjs";
+import { verifyRelease } from "./verify-release.mjs";
 
-// A separate Git index creates a deployment-only tree without checking out
-// another branch or modifying the developer's worktree/index.
 const root = process.cwd();
-const release = resolve(root, ".release");
-const metadata = JSON.parse(
-  await readFile(join(release, "release.json"), "utf8"),
-);
-if (!/^[a-f0-9]{40}$/.test(metadata.sourceSha))
-  throw new Error("Invalid release source SHA.");
-const git = (args, options = {}) =>
-  execFileSync("git", args, { cwd: root, encoding: "utf8", ...options }).trim();
-if (git(["rev-parse", "HEAD"]) !== metadata.sourceSha)
-  throw new Error("The release must correspond to the current source commit.");
+const release = join(root, ".release");
+const metadata = await verifyRelease(release);
+assertCurrentMain(root, metadata.sourceSha);
 const temporary = await mkdtemp(join(tmpdir(), "press-review-index-"));
 try {
-  const env = { ...process.env, GIT_INDEX_FILE: join(temporary, "index") };
-  git(["--work-tree", release, "add", "--all", "--", "."], { env });
-  const tree = git(["write-tree"], { env });
+  const git = gitRunner(root, {
+    index: join(temporary, "index"),
+    token: process.env.RELEASE_GITHUB_TOKEN,
+  });
+  git(["read-tree", "--empty"]);
+  // Force ignores only for the already verified, deployment-only snapshot.
+  git(["--work-tree", release, "add", "--force", "--all", "--", "."]);
+  const actual = git(["ls-files", "-z"]).split("\0").filter(Boolean).sort();
+  const expected = [...Object.keys(metadata.files), "release.json"].sort();
+  if (JSON.stringify(actual) !== JSON.stringify(expected))
+    throw new Error("Git index differs from release manifest.");
+  const tree = git(["write-tree"]);
   let parent;
   try {
-    git(
-      [
-        "ls-remote",
-        "--exit-code",
-        "--heads",
-        "origin",
-        "refs/heads/Production",
-      ],
-      { stdio: ["ignore", "pipe", "pipe"] },
-    );
+    git([
+      "ls-remote",
+      "--exit-code",
+      "--heads",
+      "origin",
+      "refs/heads/Production",
+    ]);
     git(["fetch", "--no-tags", "origin", "refs/heads/Production"]);
     parent = git(["rev-parse", "FETCH_HEAD"]);
   } catch (error) {
-    // ls-remote exits 2 only when the branch is absent; network/auth errors stop.
     if (error.status !== 2) throw error;
   }
-  const commit = git(["commit-tree", tree, ...(parent ? ["-p", parent] : [])], {
-    input: `Deploy ${metadata.sourceSha}\n`,
-  });
+  // Validate again just before promotion; there are no migration/deploy steps here.
+  assertCurrentMain(root, metadata.sourceSha);
+  const commit = git(
+    [
+      "-c",
+      "user.name=github-actions[bot]",
+      "-c",
+      "user.email=41898282+github-actions[bot]@users.noreply.github.com",
+      "commit-tree",
+      tree,
+      ...(parent ? ["-p", parent] : []),
+    ],
+    { input: `Deployed ${metadata.sourceSha}\n` },
+  );
   git(["push", "origin", `${commit}:refs/heads/Production`]);
-  console.log(`Production now contains release ${metadata.sourceSha}.`);
+  console.log(
+    `Production now contains deployed release ${metadata.sourceSha}.`,
+  );
 } finally {
   await rm(temporary, { recursive: true, force: true });
 }

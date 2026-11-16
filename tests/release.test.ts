@@ -16,6 +16,15 @@ import {
   exportRelease,
 } from "../scripts/export-release.mjs";
 
+import { configureDeployment } from "../scripts/configure-deployment.mjs";
+import { verifyRelease } from "../scripts/verify-release.mjs";
+import { cleanGitEnvironment } from "../scripts/git-utils.mjs";
+const testGitEnv = {
+  ...cleanGitEnvironment(),
+  GIT_CONFIG_GLOBAL: "/dev/null",
+  GIT_CONFIG_NOSYSTEM: "1",
+};
+
 const env = {
   CLOUDFLARE_ACCOUNT_ID: "a".repeat(32),
   CLOUDFLARE_D1_DATABASE_ID: "12345678-1234-1234-1234-123456789abc",
@@ -73,7 +82,7 @@ describe("deployment-only export", () => {
   it("exports only deployment files, injects production IDs and records hashes", async () => {
     const root = await fixture();
     const output = join(root, ".release");
-    await exportRelease({ root, output, env, sourceSha: "a".repeat(40) });
+    await exportRelease({ root, output, sourceSha: "a".repeat(40) });
     expect((await readdir(output)).sort()).toEqual([
       "migrations",
       "public",
@@ -84,10 +93,19 @@ describe("deployment-only export", () => {
     const config = JSON.parse(
       await readFile(join(output, "wrangler.json"), "utf8"),
     );
-    expect(config.account_id).toBe(env.CLOUDFLARE_ACCOUNT_ID);
+    expect(config.account_id).toBeUndefined();
     expect(config.d1_databases[0].database_id).toBe(
+      "00000000-0000-0000-0000-000000000000",
+    );
+    const deployment = await configureDeployment(root, env);
+    const concrete = JSON.parse(
+      await readFile(join(deployment, "wrangler.json"), "utf8"),
+    );
+    expect(concrete.account_id).toBe(env.CLOUDFLARE_ACCOUNT_ID);
+    expect(concrete.d1_databases[0].database_id).toBe(
       env.CLOUDFLARE_D1_DATABASE_ID,
     );
+    await verifyRelease(output);
     expect(config.d1_databases[0].migrations_dir).toBe("./migrations");
     const metadata = JSON.parse(
       await readFile(join(output, "release.json"), "utf8"),
@@ -114,12 +132,11 @@ describe("deployment-only export", () => {
       exportRelease({
         root,
         output: join(root, ".release"),
-        env,
         sourceSha: "a".repeat(40),
       }),
     ).rejects.toThrow("Unexpected asset");
     await expect(
-      exportRelease({ root, output: root, env, sourceSha: "a".repeat(40) }),
+      exportRelease({ root, output: root, sourceSha: "a".repeat(40) }),
     ).rejects.toThrow("Output must");
     expect(await readFile(join(root, "AGENTS.md"), "utf8")).toBe(
       "Must not ship",
@@ -131,26 +148,40 @@ describe("deployment-only export", () => {
     const git = (...args: string[]) =>
       execFileSync("git", args, {
         cwd: root,
+        env: testGitEnv,
         encoding: "utf8",
         stdio: ["pipe", "pipe", "pipe"],
       }).trim();
     git("init", "--initial-branch=Main");
     git("config", "user.name", "Release test");
     git("config", "user.email", "test@example.com");
+    git("config", "core.hooksPath", "/dev/null");
+    git("config", "commit.gpgsign", "false");
     git("add", "AGENTS.md");
     git("commit", "-m", "Source");
     const sourceSha = git("rev-parse", "HEAD");
     git("init", "--bare", remote);
     git("remote", "add", "origin", remote);
+    git("push", "origin", "Main");
+    git("config", "core.excludesFile", join(root, "ignore-global"));
+    await writeFile(join(root, "ignore-global"), "*.json\n");
     await exportRelease({
       root,
       output: join(root, ".release"),
-      env,
       sourceSha,
     });
     const script = resolve("scripts/promote-release.mjs");
     const sourceIndex = git("ls-files", "--stage");
-    execFileSync(process.execPath, [script], { cwd: root, stdio: "pipe" });
+    execFileSync(process.execPath, [script], {
+      cwd: root,
+      env: {
+        ...testGitEnv,
+        GIT_DIR: join(root, "foreign.git"),
+        GIT_INDEX_FILE: join(root, "foreign-index"),
+        GIT_WORK_TREE: "/",
+      },
+      stdio: "pipe",
+    });
     const first = git("--git-dir", remote, "rev-parse", "Production");
     expect(
       git("--git-dir", remote, "ls-tree", "--name-only", "Production"),
@@ -158,7 +189,59 @@ describe("deployment-only export", () => {
     expect(git("branch", "--show-current")).toBe("Main");
     expect(git("rev-parse", "HEAD")).toBe(sourceSha);
     expect(git("ls-files", "--stage")).toBe(sourceIndex);
-    execFileSync(process.execPath, [script], { cwd: root, stdio: "pipe" });
+    execFileSync(process.execPath, [script], {
+      cwd: root,
+      env: testGitEnv,
+      stdio: "pipe",
+    });
     expect(git("--git-dir", remote, "rev-parse", "Production^")).toBe(first);
+    await writeFile(join(root, "AGENTS.md"), "New source revision");
+    git("add", "AGENTS.md");
+    git("commit", "-m", "Next source");
+    git("push", "origin", "Main");
+    // Simulate rerunning the old source checkout after remote Main moved on.
+    git("checkout", "--detach", sourceSha);
+    expect(() =>
+      execFileSync(process.execPath, [script], {
+        cwd: root,
+        env: testGitEnv,
+        stdio: "pipe",
+      }),
+    ).toThrow();
+    expect(git("--git-dir", remote, "rev-parse", "Production^")).toBe(first);
+  });
+  it("rejects a modified or extended release manifest", async () => {
+    const root = await fixture();
+    const output = join(root, ".release");
+    await exportRelease({ root, output, sourceSha: "a".repeat(40) });
+    await writeFile(join(output, "worker/index.js"), "modified");
+    await expect(verifyRelease(output)).rejects.toThrow("checksum");
+    await writeFile(join(output, ".env"), "private");
+    await expect(verifyRelease(output)).rejects.toThrow("file list");
+  });
+  it("refuses new runtime configuration or chunks rather than dropping them", async () => {
+    const root = await fixture();
+    const path = join(root, "dist/my_press_review/wrangler.json");
+    const config = JSON.parse(await readFile(path, "utf8"));
+    await writeFile(
+      path,
+      JSON.stringify({ ...config, vars: { NEW_SETTING: "" } }),
+    );
+    await expect(
+      exportRelease({
+        root,
+        output: join(root, ".release"),
+        sourceSha: "a".repeat(40),
+      }),
+    ).rejects.toThrow("Unsupported Worker configuration");
+    await writeFile(path, JSON.stringify(config));
+    await writeFile(join(root, "dist/my_press_review/chunk.js"), "chunk");
+    await expect(
+      exportRelease({
+        root,
+        output: join(root, ".release"),
+        sourceSha: "a".repeat(40),
+      }),
+    ).rejects.toThrow("Unexpected Worker chunk");
   });
 });
