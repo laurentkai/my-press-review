@@ -5,6 +5,7 @@ import {
   type FeedSource,
 } from "./catalog";
 import { FeedError, parseFeed } from "./parser";
+import { classifyArticle } from "./classify";
 import { digest } from "../auth";
 
 interface SourceState {
@@ -131,13 +132,14 @@ export async function collectSource(
     const writes: D1PreparedStatement[] = [];
     for (const item of result.items) {
       const articleId = await digest(id + "\n" + item.url);
+      const topic = classifyArticle(item, id);
       // Every write is conditional on the still-valid lease and source activation.
       writes.push(
         db
           .prepare(
-            `INSERT INTO trial_articles(id,source_id,url,title,excerpt,published_at,collected_at)
-        SELECT ?,?,?,?,?,?,? WHERE EXISTS(SELECT 1 FROM trial_sources WHERE id=? AND enabled=1 AND lease_owner=? AND lease_until>?)
-        ON CONFLICT(source_id,url) DO UPDATE SET title=excluded.title,excerpt=excluded.excerpt,published_at=COALESCE(excluded.published_at,trial_articles.published_at),collected_at=excluded.collected_at`,
+            `INSERT INTO trial_articles(id,source_id,url,title,excerpt,published_at,collected_at,body_text,image_url,image_credit,access_level,publisher_categories,theme,subtheme)
+        SELECT ?,?,?,?,?,?,?,?,?,?,?,?,?,? WHERE EXISTS(SELECT 1 FROM trial_sources WHERE id=? AND enabled=1 AND lease_owner=? AND lease_until>?)
+        ON CONFLICT(source_id,url) DO UPDATE SET title=excluded.title,excerpt=excluded.excerpt,published_at=COALESCE(excluded.published_at,trial_articles.published_at),collected_at=excluded.collected_at,body_text=excluded.body_text,image_url=excluded.image_url,image_credit=excluded.image_credit,access_level=excluded.access_level,publisher_categories=excluded.publisher_categories,theme=excluded.theme,subtheme=excluded.subtheme`,
           )
           .bind(
             articleId,
@@ -147,6 +149,13 @@ export async function collectSource(
             item.excerpt,
             item.publishedAt,
             collected,
+            item.bodyText,
+            item.imageUrl,
+            item.imageCredit,
+            item.accessLevel,
+            JSON.stringify(item.categories),
+            topic.theme,
+            topic.subtheme,
             id,
             owner,
             Date.now(),

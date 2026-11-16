@@ -1408,3 +1408,133 @@ h1 > span {
     padding: 20px;
   }
 }
+
+/* Real news: theme-led sections and a quiet, readable publisher-text view. */
+.topic-sections {
+  display: grid;
+  gap: 40px;
+}
+.topic-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  border-top: 2px solid var(--forest);
+  padding-top: 14px;
+  margin-bottom: 24px;
+}
+.topic-heading h2 {
+  font:
+    400 28px/1.2 Georgia,
+    serif;
+  letter-spacing: -0.5px;
+}
+.topic-heading > span,
+.topic-count {
+  font-size: 10px;
+  color: var(--secondary);
+  font-variant-numeric: tabular-nums;
+}
+.topic-count {
+  margin-left: 6px;
+}
+.trial-grid h3 {
+  font:
+    400 23px/1.2 Georgia,
+    serif;
+  letter-spacing: -0.4px;
+  margin-bottom: 12px;
+}
+.publisher-image {
+  margin: 0 0 20px;
+}
+.publisher-image img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  background: var(--forest-soft);
+  outline: 1px solid #00000010;
+  outline-offset: -1px;
+}
+.publisher-image figcaption {
+  margin-top: 8px;
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--secondary);
+  overflow-wrap: anywhere;
+}
+.original-link {
+  align-self: flex-start;
+  font-size: 10px;
+  margin-top: 12px;
+  min-height: 36px;
+}
+.trial-reading {
+  max-width: 760px;
+  margin: 32px auto 0;
+}
+.trial-reading h1 {
+  font-size: clamp(28px, 4vw, 46px);
+  line-height: 1.15;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+}
+.trial-reading .reader-back {
+  margin-bottom: 32px;
+}
+.reader-original {
+  margin: 20px 0 28px;
+}
+.reader-image img {
+  aspect-ratio: auto;
+  max-height: 460px;
+  object-fit: contain;
+}
+.reader-disclosure {
+  margin: 24px 0;
+}
+.trial-reading .reading-body {
+  margin-top: 24px;
+  font-size: 19px;
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+}
+.trial-reading .reading-meta {
+  flex-wrap: wrap;
+}
+@media (max-width: 600px) {
+  .topic-heading h2 {
+    font-size: 24px;
+  }
+  .trial-grid h3 {
+    font-size: 25px;
+  }
+  .trial-reading {
+    margin-top: 20px;
+  }
+  .trial-reading .reading-body {
+    font-size: 17px;
+  }
+}
+
+.topic-tabs {
+  flex-wrap: wrap;
+  column-gap: 24px;
+  row-gap: 0;
+  overflow-x: visible;
+}
+.topic-tabs button {
+  min-height: 44px;
+}
+.topic-filters {
+  flex-wrap: wrap;
+}
+.topic-filters .search-field {
+  flex: 1;
+  min-width: 180px;
+}
+.topic-filters .subject-select {
+  flex: 1;
+  min-width: 180px;
+}

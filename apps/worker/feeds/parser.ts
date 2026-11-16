@@ -1,6 +1,7 @@
 import { SaxesParser } from "saxes";
 import { decodeHTML } from "entities";
 import { isSourceUrl, type FeedSource } from "./catalog";
+import { imageUrl } from "./images";
 
 export class FeedError extends Error {
   constructor(public status: string) {
@@ -12,6 +13,11 @@ export interface FeedItem {
   title: string;
   excerpt: string;
   publishedAt: string | null;
+  bodyText: string;
+  imageUrl: string | null;
+  imageCredit: string;
+  accessLevel: "free" | "restricted" | "unknown";
+  categories: string[];
 }
 export function plainText(value: string, max: number): string {
   return decodeHTML(value)
@@ -21,6 +27,20 @@ export function plainText(value: string, max: number): string {
     .replace(/\s+/g, " ")
     .trim()
     .slice(0, max);
+}
+// Only the publisher's description/summary is used. No article HTML fetch,
+// content:encoded, embedded HTML, links, scripts or styles are rendered.
+export function readingText(value: string): string {
+  return decodeHTML(value)
+    .replace(/<(script|style|iframe|svg)\b[^>]*>[\s\S]*?<\/\1\s*>/gi, " ")
+    .replace(/<br\s*\/?\s*>|<\/(?:p|div|li|h[1-6])\s*>/gi, "\n\n")
+    .replace(/<[^>]*>/g, " ")
+    .replace(/[\u0000-\u0008\u000b-\u001f\u007f]/g, " ")
+    .split(/\n+/)
+    .map((line) => line.replace(/\s+/g, " ").trim())
+    .filter(Boolean)
+    .join("\n\n")
+    .slice(0, 2000);
 }
 export function publicationDate(
   value: string,
@@ -59,24 +79,30 @@ export function parseFeed(xml: string, source: FeedSource): FeedItem[] {
   let item: Record<string, string> | null = null;
   let itemDepth = 0;
   let seen = 0;
+  let categories: string[] = [];
+  let images: { url: string; priority: number }[] = [];
+  let field: string | null = null;
   const items: FeedItem[] = [];
+  const fields = [
+    "title",
+    "description",
+    "summary",
+    "link",
+    "pubdate",
+    "published",
+    "updated",
+    "dpp:paid",
+    "dcterms:accessrights",
+    "category",
+    "media:credit",
+  ];
   const append = (text: string) => {
-    if (item && stack.length === itemDepth + 1) {
-      const name = stack.at(-1)!;
-      if (
-        [
-          "title",
-          "description",
-          "summary",
-          "link",
-          "pubdate",
-          "published",
-          "updated",
-          "dpp:paid",
-        ].includes(name)
-      )
-        item[name] = ((item[name] ?? "") + text).slice(0, 6000);
-    }
+    if (
+      item &&
+      field &&
+      !stack.some((name) => ["script", "style"].includes(name))
+    )
+      item[field] = ((item[field] ?? "") + text).slice(0, 12000);
   };
   parser.on("doctype", () => {
     throw new FeedError("invalid_xml");
@@ -95,8 +121,46 @@ export function parseFeed(xml: string, source: FeedSource): FeedItem[] {
     ) {
       if (++seen > 200) throw new FeedError("too_many_items");
       item = {};
+      categories = [];
+      images = [];
       itemDepth = stack.length;
     }
+    if (item && stack.length === itemDepth + 1 && fields.includes(name)) {
+      field = name;
+      if (name === "category") item.category = "";
+      if (name === "category" && tag.attributes.term)
+        item.category = String(tag.attributes.term);
+    }
+    if (
+      item &&
+      stack.length > itemDepth + 1 &&
+      field &&
+      ["p", "div", "br", "li"].includes(name)
+    )
+      append("\n\n");
+    if (
+      item &&
+      stack.length <= itemDepth + 2 &&
+      ["media:content", "media:thumbnail", "enclosure"].includes(name)
+    ) {
+      const type = String(tag.attributes.type ?? "").toLowerCase();
+      const medium = String(tag.attributes.medium ?? "").toLowerCase();
+      const candidate = imageUrl(String(tag.attributes.url ?? ""), source);
+      if (
+        images.length < 8 &&
+        candidate &&
+        (!type || type.startsWith("image/")) &&
+        (!medium || medium === "image") &&
+        (name !== "enclosure" || type.startsWith("image/"))
+      )
+        images.push({
+          url: candidate,
+          priority:
+            name === "media:content" ? 0 : name === "media:thumbnail" ? 1 : 2,
+        });
+    }
+    if (item && name === "media:credit" && stack.length === itemDepth + 2)
+      field = name;
     if (
       item &&
       root === "feed" &&
@@ -109,19 +173,43 @@ export function parseFeed(xml: string, source: FeedSource): FeedItem[] {
   parser.on("text", append);
   parser.on("cdata", append);
   parser.on("closetag", () => {
+    if (
+      item &&
+      field === "category" &&
+      stack.at(-1) === "category" &&
+      categories.length < 12
+    )
+      categories.push(plainText(item.category ?? "", 120));
+    if (item && field && stack.at(-1) === field) field = null;
     if (item && stack.length === itemDepth) {
       const title = plainText(item.title ?? "", 500);
       const url = articleUrl(item.link ?? "", source);
+      const rights = item["dcterms:accessrights"]?.trim().toUpperCase();
+      const accessLevel =
+        rights === "FREE"
+          ? "free"
+          : ["PAYING", "MEMBER"].includes(rights ?? "")
+            ? "restricted"
+            : "unknown";
+      const description = item.description ?? item.summary ?? "";
       if (title && url && item["dpp:paid"]?.trim().toLowerCase() !== "true")
         items.push({
           url,
           title,
-          excerpt: plainText(item.description ?? item.summary ?? "", 300),
+          excerpt: plainText(description, 300),
+          bodyText:
+            accessLevel === "restricted" ? "" : readingText(description),
+          imageUrl:
+            images.sort((a, b) => a.priority - b.priority)[0]?.url ?? null,
+          imageCredit: plainText(item["media:credit"] ?? "", 200),
+          accessLevel,
+          categories: categories.filter(Boolean),
           publishedAt: publicationDate(
             item.pubdate ?? item.published ?? item.updated ?? "",
           ),
         });
       item = null;
+      field = null;
     }
     stack.pop();
   });

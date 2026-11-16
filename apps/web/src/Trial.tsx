@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ArrowLeft,
   ArrowRight,
@@ -11,7 +11,12 @@ import {
   RefreshCw,
   Search,
 } from "lucide-react";
-import type { TrialWorkspace } from "../../../packages/shared/types";
+import { ArticleReader, PublisherImage } from "./ArticleReader";
+import { topics } from "../../../packages/shared/topics";
+import type {
+  TrialArticle,
+  TrialWorkspace,
+} from "../../../packages/shared/types";
 
 const date = (value: string | number | null) =>
   value === null
@@ -105,7 +110,15 @@ export function PrivateWorkspace({ onExit }: { onExit: () => void }) {
   const [data, setData] = useState<TrialWorkspace | null>(null);
   const [view, setView] = useState<"edition" | "sources">("edition");
   const [query, setQuery] = useState("");
-  const [category, setCategory] = useState("Toutes les catégories");
+  const [theme, setTheme] = useState("Tous les thèmes");
+  const [subtheme, setSubtheme] = useState("all");
+  const [selected, setSelected] = useState<TrialArticle | null>(null);
+  const articleButtons = useRef(new Map<string, HTMLButtonElement>());
+  const returnFocus = useRef<string | null>(null);
+  const expire = useCallback(() => {
+    setData(null);
+    exit.current();
+  }, []);
   const [sourceId, setSourceId] = useState("all");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -146,8 +159,21 @@ export function PrivateWorkspace({ onExit }: { onExit: () => void }) {
     };
   }, []);
   useEffect(() => {
+    if (!selected && returnFocus.current) {
+      const button = articleButtons.current.get(returnFocus.current);
+      returnFocus.current = null;
+      if (button) {
+        button.focus();
+        return;
+      }
+    }
     main.current?.querySelector<HTMLHeadingElement>("h1")?.focus();
-  }, [view]);
+  }, [view, selected]);
+  function navigate(next: "edition" | "sources") {
+    setSelected(null);
+    returnFocus.current = null;
+    setView(next);
+  }
   async function update(path: string, method: string, body?: object) {
     const response = await fetch(path, {
       method,
@@ -188,10 +214,10 @@ export function PrivateWorkspace({ onExit }: { onExit: () => void }) {
   const sources = data?.sources ?? [];
   const allArticles = data?.articles ?? [];
   const articles = allArticles.filter((article) => {
-    const source = sources.find((entry) => entry.id === article.sourceId);
     return (
       (sourceId === "all" || article.sourceId === sourceId) &&
-      (category === "Toutes les catégories" || source?.category === category) &&
+      (theme === "Tous les thèmes" || article.theme === theme) &&
+      (subtheme === "all" || article.subtheme === subtheme) &&
       `${article.title} ${article.excerpt}`
         .toLocaleLowerCase("fr")
         .includes(query.trim().toLocaleLowerCase("fr"))
@@ -203,7 +229,7 @@ export function PrivateWorkspace({ onExit }: { onExit: () => void }) {
         Aller au contenu privé
       </a>
       <aside className="sidebar" aria-label="Navigation de la revue privée">
-        <button className="brand" onClick={() => setView("edition")}>
+        <button className="brand" onClick={() => navigate("edition")}>
           <Newspaper size={24} />
           <span>
             la revue<span className="brand-dot">.</span>
@@ -220,14 +246,14 @@ export function PrivateWorkspace({ onExit }: { onExit: () => void }) {
         <nav>
           <button
             className={`nav-button ${view === "edition" ? "active" : ""}`}
-            onClick={() => setView("edition")}
+            onClick={() => navigate("edition")}
           >
             <BookOpen size={18} />
             Ma revue
           </button>
           <button
             className={`nav-button ${view === "sources" ? "active" : ""}`}
-            onClick={() => setView("sources")}
+            onClick={() => navigate("sources")}
           >
             <Globe2 size={18} />
             Mes sources
@@ -273,29 +299,33 @@ export function PrivateWorkspace({ onExit }: { onExit: () => void }) {
               <Clock3 size={14} /> Cadence cible : 15 min par flux
             </span>
           </div>
-          <section className="section-heading">
-            <div>
-              <p className="eyebrow">LES PERSPECTIVES QUE VOUS AVEZ CHOISIES</p>
-              <h1 tabIndex={-1}>
-                {view === "edition"
-                  ? "Votre revue, en direct."
-                  : "Mes sources réelles"}
-              </h1>
-              <p className="muted">
-                {view === "edition"
-                  ? "Titres et extraits des flux, avec un lien vers chaque publication."
-                  : "Neuf médias sélectionnés. Chaque état reflète le dernier essai de collecte."}
-              </p>
-            </div>
-            <button
-              className="primary-button"
-              onClick={refresh}
-              disabled={busy || !data}
-            >
-              <RefreshCw size={16} />
-              {busy ? "Vérification…" : "Vérifier les nouveautés"}
-            </button>
-          </section>
+          {!selected && (
+            <section className="section-heading">
+              <div>
+                <p className="eyebrow">
+                  LES PERSPECTIVES QUE VOUS AVEZ CHOISIES
+                </p>
+                <h1 tabIndex={-1}>
+                  {view === "edition"
+                    ? "Votre revue, en direct."
+                    : "Mes sources réelles"}
+                </h1>
+                <p className="muted">
+                  {view === "edition"
+                    ? "L’actualité par thème, à lire ici ou chez l’éditeur."
+                    : "Neuf médias sélectionnés. Chaque état reflète le dernier essai de collecte."}
+                </p>
+              </div>
+              <button
+                className="primary-button"
+                onClick={refresh}
+                disabled={busy || !data}
+              >
+                <RefreshCw size={16} />
+                {busy ? "Vérification…" : "Vérifier les nouveautés"}
+              </button>
+            </section>
+          )}
           {error && (
             <div className="inline-note form-error" role="alert">
               {error}{" "}
@@ -319,7 +349,18 @@ export function PrivateWorkspace({ onExit }: { onExit: () => void }) {
               Chargement de votre sélection…
             </p>
           )}
-          {view === "sources" ? (
+          {selected ? (
+            <ArticleReader
+              key={selected.id}
+              article={selected}
+              source={sources.find((entry) => entry.id === selected.sourceId)!}
+              onExpired={expire}
+              onBack={() => {
+                returnFocus.current = selected.id;
+                setSelected(null);
+              }}
+            />
+          ) : view === "sources" ? (
             <>
               <p className="inline-note">
                 Les sources bloquées restent visibles sans être contournées. Les
@@ -396,25 +437,69 @@ export function PrivateWorkspace({ onExit }: { onExit: () => void }) {
             data && (
               <>
                 <div
-                  className="theme-tabs"
+                  className="theme-tabs topic-tabs"
                   role="group"
-                  aria-label="Filtrer par catégorie"
+                  aria-label="Filtrer par thème"
                 >
                   {[
-                    "Toutes les catégories",
-                    ...new Set(sources.map((s) => s.category)),
+                    "Tous les thèmes",
+                    ...topics
+                      .filter((topic) =>
+                        allArticles.some(
+                          (article) => article.theme === topic.name,
+                        ),
+                      )
+                      .map((topic) => topic.name),
                   ].map((item) => (
                     <button
                       key={item}
-                      className={category === item ? "selected" : ""}
-                      aria-pressed={category === item}
-                      onClick={() => setCategory(item)}
+                      className={theme === item ? "selected" : ""}
+                      aria-pressed={theme === item}
+                      onClick={() => {
+                        setTheme(item);
+                        setSubtheme("all");
+                      }}
                     >
-                      {item}
+                      {item}{" "}
+                      <span className="topic-count">
+                        {
+                          allArticles.filter(
+                            (article) =>
+                              item === "Tous les thèmes" ||
+                              article.theme === item,
+                          ).length
+                        }
+                      </span>
                     </button>
                   ))}
                 </div>
-                <div className="filter-bar">
+                <div className="filter-bar topic-filters">
+                  {theme !== "Tous les thèmes" && (
+                    <label className="subject-select">
+                      <span className="sr-only">Filtrer par sous-thème</span>
+                      <select
+                        value={subtheme}
+                        onChange={(event) => setSubtheme(event.target.value)}
+                      >
+                        <option value="all">Tous les sous-thèmes</option>
+                        {[
+                          ...new Set(
+                            allArticles
+                              .filter((article) => article.theme === theme)
+                              .map((article) => article.subtheme)
+                              .filter((value): value is string => !!value),
+                          ),
+                        ]
+                          .sort()
+                          .map((item) => (
+                            <option value={item} key={item}>
+                              {item}
+                            </option>
+                          ))}
+                      </select>
+                    </label>
+                  )}
+
                   <label className="search-field">
                     <Search size={17} />
                     <span className="sr-only">
@@ -446,63 +531,113 @@ export function PrivateWorkspace({ onExit }: { onExit: () => void }) {
                   articles par source active
                 </p>
                 {articles.length ? (
-                  <div className="article-grid trial-grid">
-                    {articles.map((article) => {
-                      const source = sources.find(
-                        (entry) => entry.id === article.sourceId,
-                      )!;
+                  <div className="topic-sections">
+                    {topics.map((topic) => {
+                      const selection = articles.filter(
+                        (article) => article.theme === topic.name,
+                      );
+                      if (!selection.length) return null;
                       return (
-                        <article className="article-card" key={article.id}>
-                          <div className="article-meta">
-                            <span>{source.category}</span>
-                            <span>Flux original</span>
+                        <section
+                          className="topic-section"
+                          key={topic.name}
+                          aria-label={topic.name}
+                        >
+                          <div className="topic-heading">
+                            <h2>{topic.name}</h2>
+                            <span>{selection.length} nouvelles</span>
                           </div>
-                          <h2>
-                            <a
-                              className="headline-button"
-                              href={article.url}
-                              target="_blank"
-                              rel="noreferrer noopener"
-                            >
-                              {article.title}
-                            </a>
-                          </h2>
-                          {article.excerpt && (
-                            <p className="article-excerpt">{article.excerpt}</p>
-                          )}
-                          <div className="article-bottom">
-                            <span className="source-name">{source.name}</span>
-                            <a
-                              className="text-button"
-                              href={article.url}
-                              target="_blank"
-                              rel="noreferrer noopener"
-                            >
-                              Lire l’original <ArrowRight size={14} />
-                            </a>
+                          <div className="article-grid trial-grid">
+                            {selection.map((article) => {
+                              const source = sources.find(
+                                (entry) => entry.id === article.sourceId,
+                              )!;
+                              return (
+                                <article
+                                  className="article-card"
+                                  key={article.id}
+                                >
+                                  <PublisherImage article={article} />
+                                  <div className="article-meta">
+                                    <span>
+                                      {article.subtheme ?? article.theme}
+                                    </span>
+                                    <span>
+                                      {article.accessLevel === "restricted"
+                                        ? "Accès réservé"
+                                        : source.category}
+                                    </span>
+                                  </div>
+                                  <h3>
+                                    <button
+                                      className="headline-button"
+                                      ref={(button) => {
+                                        if (button)
+                                          articleButtons.current.set(
+                                            article.id,
+                                            button,
+                                          );
+                                        else
+                                          articleButtons.current.delete(
+                                            article.id,
+                                          );
+                                      }}
+                                      onClick={() => setSelected(article)}
+                                    >
+                                      {article.title}
+                                    </button>
+                                  </h3>
+                                  {article.excerpt && (
+                                    <p className="article-excerpt">
+                                      {article.excerpt}
+                                    </p>
+                                  )}
+                                  <div className="article-bottom">
+                                    <span className="source-name">
+                                      {source.name}
+                                    </span>
+                                    <button
+                                      className="text-button"
+                                      onClick={() => setSelected(article)}
+                                      aria-label={`Lire dans La Revue : ${article.title}`}
+                                    >
+                                      Lire ici <ArrowRight size={14} />
+                                    </button>
+                                  </div>
+                                  <a
+                                    className="text-button original-link"
+                                    href={article.url}
+                                    target="_blank"
+                                    rel="noreferrer noopener"
+                                  >
+                                    Article original <ArrowRight size={12} />
+                                  </a>
+                                  <p className="article-date">
+                                    {article.publishedAt
+                                      ? `Publié le ${date(article.publishedAt)}`
+                                      : "Date de publication non précisée par le flux"}
+                                    <br />
+                                    Collecté le {date(article.collectedAt)}
+                                  </p>
+                                </article>
+                              );
+                            })}
                           </div>
-                          <p className="article-date">
-                            {article.publishedAt
-                              ? `Publié le ${date(article.publishedAt)}`
-                              : "Date de publication non précisée par le flux"}
-                            <br />
-                            Collecté le {date(article.collectedAt)}
-                          </p>
-                        </article>
+                        </section>
                       );
                     })}
                   </div>
                 ) : (
                   <section className="empty-state">
                     <Newspaper size={28} />
-                    <h2>La revue attend ses premiers articles.</h2>
+                    <h2>Aucun article dans cette sélection.</h2>
                     <p>
                       Vérifiez les nouveautés ou ajustez les filtres. Les
                       erreurs éventuelles sont visibles dans Mes sources.
                     </p>
                     <button
                       className="text-button"
-                      onClick={() => setView("sources")}
+                      onClick={() => navigate("sources")}
                     >
                       Voir les états des sources <ArrowRight size={14} />
                     </button>
@@ -515,7 +650,9 @@ export function PrivateWorkspace({ onExit }: { onExit: () => void }) {
             <span>
               la revue. <span>Sources citées. Accès privé.</span>
             </span>
-            <span>Le texte intégral se lit chez l’éditeur.</span>
+            <span>
+              Classement par règles · Texte et illustrations des flux.
+            </span>
           </footer>
         </main>
       </div>

@@ -31,6 +31,12 @@ export interface TrialSource {
   articleCount: number;
 }
 export interface TrialArticle {
+  theme: string;
+  subtheme: string | null;
+  imageUrl: string | null;
+  imageCredit: string;
+  accessLevel: "free" | "restricted" | "unknown";
+  publisherCategories: string[];
   id: string;
   sourceId: string;
   url: string;
@@ -42,4 +48,8 @@ export interface TrialArticle {
 export interface TrialWorkspace {
   sources: TrialSource[];
   articles: TrialArticle[];
+}
+
+export interface TrialArticleDetail extends TrialArticle {
+  bodyText: string;
 }
