@@ -1,16 +1,17 @@
 {
-  "sourceSha": "4e404236ed31b3eb83c4c7562318cd93452198e0",
+  "sourceSha": "4c0d9a0a0af992c8ab4a353990e8779062862300",
   "wranglerVersion": "4.162.0",
   "files": {
     "migrations/0001_identity_and_sources.sql": "8e951f8ef8340e463cafcb23d5753a042c67015481229bccee0fb2668248efad",
     "migrations/0002_private_feed_trial.sql": "1a66c6eec432cb89479a24bfdd1993117ef33566ff89cd2ba69f0d616cc89fb0",
     "migrations/0003_article_reading.sql": "5bd171242b13b69c4658b8c859823890480866211764f8e249bb38a540675ffd",
+    "migrations/0004_full_article_reading.sql": "f3d1426e03b88ff02d99afb325d98e234622e8db21f12fd3d98fd9f87137559c",
     "public/.assetsignore": "4f83140d5f4293ab55bd1207327e995c83258f1e7d3145b1b5d7a3d17fdfe0a7",
     "public/_headers": "60ad7e7a8c32ae094d205965dc3c1d1820934f9137fe53f3013e2cb7b1d38b67",
-    "public/assets/index-BFfSC6vz.js": "69782062febc1a07f41d3a6cd56091adedefa461420893ac19f92ba08738d886",
     "public/assets/index-CriKCCCP.css": "d43193596fe33d0602352dd052a437587e25ff602868c2ea242baba705ac2ce2",
-    "public/index.html": "3a98049fd19fa1a122248c96192147482cbb2b7d03e0e402788ba60fee71b3da",
-    "worker/index.js": "a87dd30eca15fcddca720af756855f6251e195c0792d56dce8c49ca089b31b45",
+    "public/assets/index-DGX7QliY.js": "1047cb4a2f05673468262d3cce1f967db51e0542ead3cc53af6214242ec223db",
+    "public/index.html": "fd8fefb25817636b686f7fcff23a73ec07a0b2491a25bbb39cb8a4b6b533ed35",
+    "worker/index.js": "b0162e68a0b56c3e64a76d83bfe31c5e168c908584d02f751a3c3eb27a65a0c0",
     "wrangler.json": "b22f8b81d986894fcf173d54f04498e518b9f86bebb6a1ba5198317340f5456e"
   }
 }

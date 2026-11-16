@@ -1,5 +1,25 @@
 // \0rolldown/runtime.js
+var __create = Object.create;
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getProtoOf = Object.getPrototypeOf;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
 var __commonJSMin = (cb, mod) => () => (mod || (cb((mod = { exports: {} }).exports, mod, mod.exports), cb = null), mod.exports);
+var __copyProps = (to, from, except, desc) => {
+	if (from && typeof from === "object" || typeof from === "function") for (var keys = __getOwnPropNames(from), i = 0, n = keys.length, key; i < n; i++) {
+		key = keys[i];
+		if (!__hasOwnProp.call(to, key) && key !== except) __defProp(to, key, {
+			get: ((k) => from[k]).bind(null, key),
+			enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable
+		});
+	}
+	return to;
+};
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(isNodeMode || !mod || !mod.__esModule || !__hasOwnProp.call(mod, "default") ? __defProp(target, "default", {
+	value: mod,
+	enumerable: true
+}) : target, mod));
 // node_modules/hono/dist/http-exception.js
 /**
 * `HTTPException` must be used when a fatal error such as authentication failure occurs.
@@ -2816,7 +2836,7 @@ var metadataAliases = [
 		keywords: ["tech web"]
 	}
 ];
-function normalize(value) {
+function normalize$1(value) {
 	return value.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
 }
 function contains(text, keyword) {
@@ -2824,28 +2844,28 @@ function contains(text, keyword) {
 }
 function pathSections(value) {
 	try {
-		return new URL(value).pathname.split("/").filter(Boolean).slice(0, -1).map((part) => normalize(decodeURIComponent(part)));
+		return new URL(value).pathname.split("/").filter(Boolean).slice(0, -1).map((part) => normalize$1(decodeURIComponent(part)));
 	} catch {
 		return [];
 	}
 }
 var compiledTopics = topics.filter((topic) => topic.name !== "Autres").map((topic) => ({
 	name: topic.name,
-	normalized: normalize(topic.name),
+	normalized: normalize$1(topic.name),
 	aliases: metadataAliases.filter((rule) => rule.theme === topic.name).map((rule) => ({
 		...rule,
-		keywords: rule.keywords.map(normalize)
+		keywords: rule.keywords.map(normalize$1)
 	})),
 	rules: rules.filter((rule) => rule.theme === topic.name).map((rule) => ({
 		...rule,
-		keywords: rule.keywords.map(normalize)
+		keywords: rule.keywords.map(normalize$1)
 	}))
 }));
 function classifyArticle(input, sourceId) {
-	const categories = (input.categories ?? []).map(normalize);
+	const categories = (input.categories ?? []).map(normalize$1);
 	const sections = pathSections(input.url);
-	const title = normalize(input.title);
-	const excerpt = normalize(input.excerpt);
+	const title = normalize$1(input.title);
+	const excerpt = normalize$1(input.excerpt);
 	let best;
 	let bestScore = 0;
 	for (const topic of compiledTopics) {
@@ -2893,6 +2913,2960 @@ function classifyArticle(input, sourceId) {
 		theme: "Autres",
 		subtheme: null
 	};
+}
+// node_modules/robots-parser/Robots.js
+var require_Robots = /* @__PURE__ */ __commonJSMin(((exports, module) => {
+	/**
+	* Trims the white space from the start and end of the line.
+	*
+	* If the line is an array it will strip the white space from
+	* the start and end of each element of the array.
+	*
+	* @param  {string|Array} line
+	* @return {string|Array}
+	* @private
+	*/
+	function trimLine(line) {
+		if (!line) return null;
+		if (Array.isArray(line)) return line.map(trimLine);
+		return String(line).trim();
+	}
+	/**
+	* Remove comments from lines
+	*
+	* @param {string} line
+	* @return {string}
+	* @private
+	*/
+	function removeComments(line) {
+		var commentStartIndex = line.indexOf("#");
+		if (commentStartIndex > -1) return line.substr(0, commentStartIndex);
+		return line;
+	}
+	/**
+	* Splits a line at the first occurrence of :
+	*
+	* @param  {string} line
+	* @return {Array.<string>}
+	* @private
+	*/
+	function splitLine(line) {
+		var idx = String(line).indexOf(":");
+		if (!line || idx < 0) return null;
+		return [line.slice(0, idx), line.slice(idx + 1)];
+	}
+	/**
+	* Normalises the user-agent string by converting it to
+	* lower case and removing any version numbers.
+	*
+	* @param  {string} userAgent
+	* @return {string}
+	* @private
+	*/
+	function formatUserAgent(userAgent) {
+		var formattedUserAgent = userAgent.toLowerCase();
+		var idx = formattedUserAgent.indexOf("/");
+		if (idx > -1) formattedUserAgent = formattedUserAgent.substr(0, idx);
+		return formattedUserAgent.trim();
+	}
+	/**
+	* Normalises the URL encoding of a path by encoding
+	* unicode characters.
+	*
+	* @param {string} path
+	* @return {string}
+	* @private
+	*/
+	function normaliseEncoding(path) {
+		try {
+			return urlEncodeToUpper(encodeURI(path).replace(/%25/g, "%"));
+		} catch (e) {
+			return path;
+		}
+	}
+	/**
+	* Convert URL encodings to support case.
+	*
+	* e.g.: %2a%ef becomes %2A%EF
+	*
+	* @param {string} path
+	* @return {string}
+	* @private
+	*/
+	function urlEncodeToUpper(path) {
+		return path.replace(/%[0-9a-fA-F]{2}/g, function(match) {
+			return match.toUpperCase();
+		});
+	}
+	/**
+	* Matches a pattern with the specified path
+	*
+	* Uses same algorithm to match patterns as the Google implementation in
+	* google/robotstxt so it should be consistent with the spec.
+	*
+	* @see https://github.com/google/robotstxt/blob/f465f0ede81099dd8bc4aeb2966b3a892bd488b3/robots.cc#L74
+	* @param {string} pattern
+	* @param {string} path
+	* @return {boolean}
+	* @private
+	*/
+	function matches(pattern, path) {
+		var matchingLengths = new Array(path.length + 1);
+		var numMatchingLengths = 1;
+		matchingLengths[0] = 0;
+		for (var p = 0; p < pattern.length; p++) {
+			if (pattern[p] === "$" && p + 1 === pattern.length) return matchingLengths[numMatchingLengths - 1] === path.length;
+			if (pattern[p] == "*") {
+				numMatchingLengths = path.length - matchingLengths[0] + 1;
+				for (var i = 1; i < numMatchingLengths; i++) matchingLengths[i] = matchingLengths[i - 1] + 1;
+			} else {
+				var numMatches = 0;
+				for (var i = 0; i < numMatchingLengths; i++) if (matchingLengths[i] < path.length && path[matchingLengths[i]] === pattern[p]) matchingLengths[numMatches++] = matchingLengths[i] + 1;
+				if (numMatches == 0) return false;
+				numMatchingLengths = numMatches;
+			}
+		}
+		return true;
+	}
+	function parseRobots(contents, robots) {
+		var lines = contents.split(/\r\n|\r|\n/).map(removeComments).map(splitLine).map(trimLine);
+		var currentUserAgents = [];
+		var isNoneUserAgentState = true;
+		for (var i = 0; i < lines.length; i++) {
+			var line = lines[i];
+			if (!line || !line[0]) continue;
+			switch (line[0].toLowerCase()) {
+				case "user-agent":
+					if (isNoneUserAgentState) currentUserAgents.length = 0;
+					if (line[1]) currentUserAgents.push(formatUserAgent(line[1]));
+					break;
+				case "disallow":
+					robots.addRule(currentUserAgents, line[1], false, i + 1);
+					break;
+				case "allow":
+					robots.addRule(currentUserAgents, line[1], true, i + 1);
+					break;
+				case "crawl-delay":
+					robots.setCrawlDelay(currentUserAgents, line[1]);
+					break;
+				case "sitemap":
+					if (line[1]) robots.addSitemap(line[1]);
+					break;
+				case "host": if (line[1]) robots.setPreferredHost(line[1].toLowerCase());
+			}
+			isNoneUserAgentState = line[0].toLowerCase() !== "user-agent";
+		}
+	}
+	/**
+	* Returns if a pattern is allowed by the specified rules.
+	*
+	* @param  {string}  path
+	* @param  {Array.<Object>}  rules
+	* @return {Object?}
+	* @private
+	*/
+	function findRule(path, rules) {
+		var matchedRule = null;
+		for (var i = 0; i < rules.length; i++) {
+			var rule = rules[i];
+			if (!matches(rule.pattern, path)) continue;
+			if (!matchedRule || rule.pattern.length > matchedRule.pattern.length) matchedRule = rule;
+			else if (rule.pattern.length == matchedRule.pattern.length && rule.allow && !matchedRule.allow) matchedRule = rule;
+		}
+		return matchedRule;
+	}
+	/**
+	* Converts provided string into an URL object.
+	*
+	* Will return null if provided string is not a valid URL.
+	*
+	* @param {string} url
+	* @return {?URL}
+	* @private
+	*/
+	function parseUrl(url) {
+		try {
+			var url = new URL(url, "http://robots-relative.samclarke.com/");
+			if (!url.port) url.port = url.protocol === "https:" ? 443 : 80;
+			return url;
+		} catch (e) {
+			return null;
+		}
+	}
+	function Robots(url, contents) {
+		this._url = parseUrl(url) || {};
+		this._rules = Object.create(null);
+		this._sitemaps = [];
+		this._preferredHost = null;
+		parseRobots(contents || "", this);
+	}
+	/**
+	* Adds the specified allow/deny rule to the rules
+	* for the specified user-agents.
+	*
+	* @param {Array.<string>} userAgents
+	* @param {string} pattern
+	* @param {boolean} allow
+	* @param {number} [lineNumber] Should use 1-based indexing
+	*/
+	Robots.prototype.addRule = function(userAgents, pattern, allow, lineNumber) {
+		var rules = this._rules;
+		userAgents.forEach(function(userAgent) {
+			rules[userAgent] = rules[userAgent] || [];
+			if (!pattern) return;
+			rules[userAgent].push({
+				pattern: normaliseEncoding(pattern),
+				allow,
+				lineNumber
+			});
+		});
+	};
+	/**
+	* Adds the specified delay to the specified user agents.
+	*
+	* @param {Array.<string>} userAgents
+	* @param {string} delayStr
+	*/
+	Robots.prototype.setCrawlDelay = function(userAgents, delayStr) {
+		var rules = this._rules;
+		var delay = Number(delayStr);
+		userAgents.forEach(function(userAgent) {
+			rules[userAgent] = rules[userAgent] || [];
+			if (isNaN(delay)) return;
+			rules[userAgent].crawlDelay = delay;
+		});
+	};
+	/**
+	* Add a sitemap
+	*
+	* @param {string} url
+	*/
+	Robots.prototype.addSitemap = function(url) {
+		this._sitemaps.push(url);
+	};
+	/**
+	* Sets the preferred host name
+	*
+	* @param {string} url
+	*/
+	Robots.prototype.setPreferredHost = function(url) {
+		this._preferredHost = url;
+	};
+	Robots.prototype._getRule = function(url, ua) {
+		var parsedUrl = parseUrl(url) || {};
+		var userAgent = formatUserAgent(ua || "*");
+		if (parsedUrl.protocol !== this._url.protocol || parsedUrl.hostname !== this._url.hostname || parsedUrl.port !== this._url.port) return;
+		var rules = this._rules[userAgent] || this._rules["*"] || [];
+		return findRule(urlEncodeToUpper(parsedUrl.pathname + parsedUrl.search), rules);
+	};
+	/**
+	* Returns true if allowed, false if not allowed.
+	*
+	* Will return undefined if the URL is not valid for
+	* this robots.txt file.
+	*
+	* @param  {string}  url
+	* @param  {string?}  ua
+	* @return {boolean?}
+	*/
+	Robots.prototype.isAllowed = function(url, ua) {
+		var rule = this._getRule(url, ua);
+		if (typeof rule === "undefined") return;
+		return !rule || rule.allow;
+	};
+	/**
+	* Returns the line number of the matching directive for the specified
+	* URL and user-agent if any.
+	*
+	* The line numbers start at 1 and go up (1-based indexing).
+	*
+	* Return -1 if there is no matching directive. If a rule is manually
+	* added without a lineNumber then this will return undefined for that
+	* rule.
+	*
+	* @param  {string}  url
+	* @param  {string?}  ua
+	* @return {number?}
+	*/
+	Robots.prototype.getMatchingLineNumber = function(url, ua) {
+		var rule = this._getRule(url, ua);
+		return rule ? rule.lineNumber : -1;
+	};
+	/**
+	* Returns the opposite of isAllowed()
+	*
+	* @param  {string}  url
+	* @param  {string}  ua
+	* @return {boolean}
+	*/
+	Robots.prototype.isDisallowed = function(url, ua) {
+		return !this.isAllowed(url, ua);
+	};
+	/**
+	* Gets the crawl delay if there is one.
+	*
+	* Will return undefined if there is no crawl delay set.
+	*
+	* @param  {string} ua
+	* @return {number?}
+	*/
+	Robots.prototype.getCrawlDelay = function(ua) {
+		var userAgent = formatUserAgent(ua || "*");
+		return (this._rules[userAgent] || this._rules["*"] || {}).crawlDelay;
+	};
+	/**
+	* Returns the preferred host if there is one.
+	*
+	* @return {string?}
+	*/
+	Robots.prototype.getPreferredHost = function() {
+		return this._preferredHost;
+	};
+	/**
+	* Returns an array of sitemap URLs if there are any.
+	*
+	* @return {Array.<string>}
+	*/
+	Robots.prototype.getSitemaps = function() {
+		return this._sitemaps.slice(0);
+	};
+	module.exports = Robots;
+}));
+// apps/worker/feeds/article-preprocess.ts
+var import_robots_parser = /* @__PURE__ */ __toESM((/* @__PURE__ */ __commonJSMin(((exports, module) => {
+	var Robots = require_Robots();
+	module.exports = function(url, contents) {
+		return new Robots(url, contents);
+	};
+})))(), 1);
+/** Drop inert payloads with the Workers native streaming parser before extraction.
+* Node has no HTMLRewriter: the unchanged fallback makes no performance claim.
+* This is not a sanitizer; publisher policy and access checks stay in extraction.
+*/
+async function preprocessArticleHtml(html) {
+	if (typeof HTMLRewriter === "undefined") return html;
+	return new HTMLRewriter().on("script", { element(element) {
+		if (element.getAttribute("type")?.split(";")[0]?.trim().toLowerCase() !== "application/ld+json") element.remove();
+	} }).on("style, svg, template, noscript", { element(element) {
+		element.remove();
+	} }).transform(new Response(html, { headers: { "content-type": "text/html; charset=utf-8" } })).text();
+}
+// node_modules/htmlparser2/node_modules/entities/dist/decode-codepoint.js
+/**
+* C1 Unicode control character reference replacements (code points 128–159).
+* Index i gives the replacement for code point 128+i; 0 means "no replacement".
+*/
+var c1$1 = [
+	8364,
+	0,
+	8218,
+	402,
+	8222,
+	8230,
+	8224,
+	8225,
+	710,
+	8240,
+	352,
+	8249,
+	338,
+	0,
+	381,
+	0,
+	0,
+	8216,
+	8217,
+	8220,
+	8221,
+	8226,
+	8211,
+	8212,
+	732,
+	8482,
+	353,
+	8250,
+	339,
+	0,
+	382,
+	376
+];
+/**
+* True for NUL, UTF-16 surrogates, and values past U+10FFFF.
+* @param codePoint Unicode code point to check.
+*/
+function isInvalidCodePoint$1(codePoint) {
+	return codePoint === 0 || codePoint >= 55296 && codePoint <= 57343 || codePoint > 1114111;
+}
+/**
+* Replace the given code point with U+FFFD if it is NUL (0), a surrogate, or
+* outside the valid Unicode range. Code points in the C1 controls range
+* (128–159) are remapped to their Windows-1252 equivalents, following the
+* HTML spec. All other code points are returned unchanged.
+* @param codePoint Unicode code point to convert.
+*/
+function replaceCodePoint$1(codePoint) {
+	if (isInvalidCodePoint$1(codePoint)) return 65533;
+	if (codePoint >= 128 && codePoint <= 159) return c1$1[codePoint - 128] || codePoint;
+	return codePoint;
+}
+/**
+* XML numeric character references are the referenced Unicode code point.
+* Invalid values still become U+FFFD; the HTML Windows-1252 C1 remap is not
+* applied.
+* @see https://www.w3.org/TR/xml/#NT-CharRef
+* @param codePoint Unicode code point to convert.
+*/
+function replaceCodePointXML(codePoint) {
+	return isInvalidCodePoint$1(codePoint) ? 65533 : codePoint;
+}
+// node_modules/htmlparser2/node_modules/entities/dist/internal/decode-shared.js
+var BASE91_INVERSE = /* #__PURE__ */ (() => {
+	const table = /* @__PURE__ */ new Uint8Array(127);
+	let code = 0;
+	for (let char = 33; char <= 126; char++) if (char !== 34 && char !== 36 && char !== 92) table[char] = code++;
+	return table;
+})();
+/**
+* Decode a dictionary-encoded trie string back into its Uint16Array.
+*
+* Stream layout (consumed in this order):
+*   1. dict1 atoms — `dict1AtomCount` uint16 values, delta+RLE encoded.
+*   2. dict2 atoms — `atomCount - dict1AtomCount` values, delta+RLE.
+*   3. dict2 ngrams — `ngramCount - (dictSize - dict1AtomCount)` entries,
+*      each a pair of slot codes that resolve to earlier slots.
+*   4. dict1 ngrams — `dictSize - dict1AtomCount` entries, same shape.
+*   5. data — slot codes, each expanding to one or more uint16 values.
+*
+* Codes use a 91-char base (printable ASCII minus `"`, `$`, `\`):
+*   - char1 < dictSize  → 1-char code, slot = char1
+*   - char1 ≥ dictSize  → 2-char code, slot = dictSize + (char1 - dictSize)*91 + char2
+*
+* Slot index → token kind:
+*   [0, A)                  dict1 atoms     (1-char codes)
+*   [A, dictSize)           dict1 ngrams    (1-char codes)
+*   [dictSize, dictSize+D)  dict2 atoms     (2-char codes)
+*   [dictSize+D, end)       dict2 ngrams    (2-char codes)
+*
+* Both atom dicts decode before any ngram, and dict2 ngrams decode before
+* dict1 ngrams. So every ngram entry references slots whose contents are
+* already filled — no forward references to handle.
+*
+* This runs on library import. Flat typed arrays store each slot as either
+* a plain value (`single`, covering every atom) or a range in a shared
+* `pool` (ngrams).
+* @param input Packed trie string.
+* @param resultLength Expected number of uint16 values in the output.
+* @param atomCount Total number of distinct uint16 values in the trie.
+* @param dict1AtomCount Atoms in the 1-char range (`A` above).
+* @param ngramCount Total number of ngram entries (dict1 + dict2).
+* @param dictSize Number of 1-char code slots; the rest of `BASE - dictSize`
+*   first-byte values are 2-char codes.
+*/
+function decodeTrieDict(input, resultLength, atomCount, dict1AtomCount, ngramCount, dictSize) {
+	const base = 91;
+	const inputLength = input.length;
+	const twoCharBias = dictSize * 90;
+	let pos = 0;
+	/** Read one slot code at `pos` and return its slot index, advancing pos. */
+	const readSlotCode = () => {
+		const c1 = BASE91_INVERSE[input.charCodeAt(pos++)];
+		return c1 < dictSize ? c1 : c1 * base - twoCharBias + BASE91_INVERSE[input.charCodeAt(pos++)];
+	};
+	const dict2AtomCount = atomCount - dict1AtomCount;
+	const slotCount = atomCount + ngramCount;
+	const single = new Int32Array(slotCount);
+	single.fill(-1, dict1AtomCount, dictSize);
+	single.fill(-1, dictSize + dict2AtomCount, slotCount);
+	const start = new Int32Array(slotCount);
+	const length = new Int32Array(slotCount);
+	/**
+	* Decode `count` ascending uint16 values from a delta+RLE stream into
+	* `single[off..off+count)`.
+	*
+	*   code < 89   → delta = code
+	*   code == 89  → run-length: next char encodes runLength-2; emit `runLength` consecutive +1 values
+	*   code == 90, next < 90  → escape: delta = 89 + next * BASE + after-next
+	*   code == 90, next == 90 → double-escape: extra char for very large deltas
+	* @param count
+	* @param off
+	*/
+	function decodeDelta(count, off) {
+		let previous = 0;
+		let slot = off;
+		const end = off + count;
+		while (slot < end) {
+			const code = BASE91_INVERSE[input.charCodeAt(pos++)];
+			if (code < 89) {
+				previous += code;
+				single[slot++] = previous;
+			} else if (code === 89) {
+				let runLength = BASE91_INVERSE[input.charCodeAt(pos++)] + 2;
+				while (runLength--) single[slot++] = ++previous;
+			} else {
+				const next = BASE91_INVERSE[input.charCodeAt(pos++)];
+				previous += 89 + (next < 90 ? next * base + BASE91_INVERSE[input.charCodeAt(pos++)] : BASE91_INVERSE[input.charCodeAt(pos++)] * 8281 + BASE91_INVERSE[input.charCodeAt(pos++)] * base + BASE91_INVERSE[input.charCodeAt(pos++)]);
+				single[slot++] = previous;
+			}
+		}
+	}
+	decodeDelta(dict1AtomCount, 0);
+	decodeDelta(dict2AtomCount, dictSize);
+	const references = new Int32Array(ngramCount * 2);
+	let poolSize = 0;
+	let ngramIndex = 0;
+	/**
+	* Read `count` ngram entries (each = 2 slot-code references) for the slots
+	* starting at `startSlot`, recording references and assigning pool ranges.
+	* @param count
+	* @param startSlot
+	*/
+	function readNgramReferences(count, startSlot) {
+		for (let index = 0; index < count; index++) {
+			const slot = startSlot + index;
+			const a = readSlotCode();
+			const b = readSlotCode();
+			references[ngramIndex * 2] = a;
+			references[ngramIndex * 2 + 1] = b;
+			ngramIndex += 1;
+			start[slot] = poolSize;
+			const entryLength = (single[a] < 0 ? length[a] : 1) + (single[b] < 0 ? length[b] : 1);
+			length[slot] = entryLength;
+			poolSize += entryLength;
+		}
+	}
+	readNgramReferences(ngramCount - dictSize + dict1AtomCount, dictSize + dict2AtomCount);
+	readNgramReferences(dictSize - dict1AtomCount, dict1AtomCount);
+	const pool = new Uint16Array(poolSize);
+	let write = 0;
+	for (let index = 0; index < ngramIndex; index++) for (let half = 0; half < 2; half++) {
+		const source = references[index * 2 + half];
+		const value = single[source];
+		if (value < 0) {
+			let read = start[source];
+			const readEnd = read + length[source];
+			while (read < readEnd) pool[write++] = pool[read++];
+		} else pool[write++] = value;
+	}
+	const out = new Uint16Array(resultLength);
+	let outIndex = 0;
+	while (pos < inputLength) {
+		let slot = BASE91_INVERSE[input.charCodeAt(pos++)];
+		if (slot >= dictSize) slot = slot * base - twoCharBias + BASE91_INVERSE[input.charCodeAt(pos++)];
+		const value = single[slot];
+		if (value < 0) {
+			let read = start[slot];
+			const readEnd = read + length[slot];
+			while (read < readEnd) out[outIndex++] = pool[read++];
+		} else out[outIndex++] = value;
+	}
+	return out;
+}
+// node_modules/htmlparser2/node_modules/entities/dist/generated/decode-data-html.js
+/** Packed HTML decode trie data. */
+var htmlDecodeTree = /* #__PURE__ */ decodeTrieDict("!}.&u%}'&}*'~!6*)%&,~!J~!J~%L~y<~!R,~~%Lu~~#GD~~#|)1#%}^%}2%+#.##%##%}&%##%'#%##&%#%#'%#&#%#&#'#%%#&#%##%#)%''%&%#%#'%#%%#%%}%%%#%#&(23#%%#&-%0%('1#(##%#'##+%'*.:1}#%#6-+(%'%%#%%%}#L'2351&('%}&/N'(0(/*-%(%%}#'+&T%7.2}#&%&#%#36/5##%&%%#&#%%#))2%%##%&&'0~!#*+&'%1~!%).'3q?&%'1~!.##%6(~!+%%%(Gw'rT~!E#<nA%#jZ~!H%(~!42##~!*31&~!G%U~#)5~#`3~!J~!Z~%]~%Y~%C~!q~!u~#kz~%#~!6'~!D~!U~!?~#T~!c%~!G#'~%7|~!G~!J~!G&~#pb~(Df}#%}*&}#%##%##%##&#-}&'#'&%#.++}%mI,#,@&(}*%}*'%&##&#%##%}&0}#.},U},%}+%}&%}#%##&}B%(}(%}+%)})%##%#&}&%##%&}<%}>%#%&}*%}(%}9%}/%})%}*%}*%}?&}&%}3%}&*#%})%#%#)}#&#-#+*%E%%'%'#%}#*V##&##I}#&&##%&%#&&Qf%%))w/0+&%#(#.%-''''++++7}>%4'',##1,#%#&%##&#'##&#*#9)%&%}#*}%,#+P(%A&%#'&##wSD',9E00#y#@}(+}&%&>~!#~!X}#*}(&&}(&}(,%}%&#+&}#&}I%#%}%)#(},'%#*}4%%#%}(''}#/##(##),%-##%%)#&}(.}&%#&}%%}*&#%},&&}&%}#%*'#%})%}D&}&%}-&}6&#&}-,%}#%})-(~+`~,=?~I9'9%~!,#%})%})%}@%}?%}(~!?~#<~#pP~#BG~#=1#%K+~#?#~%;)~#A~#mF1~#A'~'X%'~#lR~#N~'N~#r~#m#-~#i'?%#'%~#B%##%,%#~#_%#0%~#]732~,w~2+#:&#%&'0%&>%}#>##F+)#%&&#(+_}4&}-%}(&}@&}O7Fdf0@+/v4}&WU##&/0#&'('B#%}.%}'+#%}#%%&#&%#%##+#&#)#6#'#.},%}c%},%#%##%&#&%#&~#>'*-.%##%##%}#%%}%'~#)D1}#%*&~#_%%'(~#S2%'.}#~#=##*'*-%}&'%'##&&~'E%.#&~#M4}%%##&'%#~#O1##%&#'+~#<B%##%%'%+~#;#@%}#&%#&&%#(~#H1}'%'##&&~#?A}&'~#D#%32}'&&&&~#[}'(#%}'~#;C})&}%%#%~#=&%,3}%'(#%%~#^'#&&)#%'~#Y%-~#d-%'~#^%%&#&&&}#~#b~2t*&'~&(~&@~0%~e~3}%*''0})&}+~!9##-}#%-hD*)1fC#%/&/fB#40~!+#)*4~!+~!K'&:~!/*7~!.#~!H~!L':~%x&~!H#~!*~%1~!I#~!+A~#p'~!F~~#-#~,,(~.Z~!V~%;'B'mq-W~!N~%I%#&&#&}#%},%%}'%}+X#%}#&}(%}'%}<%}#%}%%'}'%}:~![)9@~%>~#UA%-%##&~!C%~!-.9:~!1~!-^2/:a~!y,D*J#-5)/4~%23,~#G~!L1~!0X3`~!2+~!!0-~&E~!W~!o,>Y&]~%cZx_&~#O*9#A#'#+I'%#)~!0B*-5A+-((F&*M#)(-7-5+'-3a5Vi~!Y~!?+[)%3),ERHm~!+:D,VG.+)?fB%%*(%)'(#&80%1'8`K8?`+'Z#&O&'H5#*9)A%%5&3))0%39+.*7#()&&*=4@**L)<'_&*+..;(#*+)./&0#3)%')-8(4ixD(&.}%,('aI:,)%,k2231T)I'#/-W7,/'Q#.'Y24+h')37</31&83##&0#),H(?'&?/1##%#&&#%''-%&&&#(&''&#.-'%#%%(,')*'&#&#'##%(%(#%('#&##%%%%('%#%#%%#%#&%##h>w+v<ayvyvcg.uuhKr}g/v|g>u9i[~>g5uI~=RvdwEg;v/g;uk!!TTSx]@RT!U!#!@VBRUU!'UTe-d0c`e&gSdicedFcrdTaqb.kYcAohdYd@a3e+d}dMdtd.aJ#bqcK`dle/e.e'dwdPdodddjbEb}ogd^ofdpduc6j?l%d{drdqc)d7bacOdQ%T#Y)X.sR[yH>6Vyv3[xwLu>vo'!*.[yBacahoj>6Rew3[xqdZa#!a&#^(X-[yG>6Vyu3[xvg3sEr|g.u/Ri9db0T#^(Xa)!-[y;>6Vylg4wKs{JwNZt3@3r=c4Z([xlg;wKt!cpq's@v7A'*a(a+!-a#[y<3Dt?3Dt'>6Vym3[xmg9rxsNJwLZt4~?r?db1T#`-!(Xa,!0[yS>6Vz%NuQs.g4wKtnJwNZtS@3r>c4Z([y%g;wKtrdga8!a(!#&T*Y-Xa#!a0<or[yc3Dtq>6Vz43[y3JwNZtf@3s!Ju}!%Dti:pm3c_%X#tjB5pkd6q!r]u?voC'*-a.a2!0a&a+[yI3DtI3Ds~3DtH>6Vyw3[xx;:s#~<5pKJwNZtE@3r~d`a)!a2T#a.(!+U.X1[yT3Dt`3Dtv>6Vz&3[y&g9rxwzcxstPu.<rAJwLZtT~?r@dZa%!a.&^*Za(/Reu[ya>6Vz23[y1g3sEr}wkg{NuQRg{ci(U#5@b`~,cg#U(2WnH5wugcRh7dX#T(Y,a'Ta!!a,[yZ<]mj>6Vz,3[y+Pv#5ReZKu+=,%!H}7ABwkaS?Rh:BcW(X#<]mrj:ubv/ARekdg%!(!a.*Ta(Y.X1!#sP>Rl*Dt6[y>>6Vyo3Wf*jOvuumvuRgRJuq*!:9<B@bX~3jVv&v@s@5Re[d/rQt{uAvo&a&a*)a2!,0Wf!3Dt0=Bs'>6Re}3[xy~<5s%JwJZt1~Gs)c;&!#2sJkNuXvzq7rxu,Re8dka4!a8(aEZ+a@Y.X1Xa)[yd=Bs(3DtP>6Vz53[y4cX#X&Re:avRe9~<5s&JwJZtQ~Gs*i^rzvdRg+Jv{%!2sbB@bX}kdga,!Za?&^*T1/!a'Dt+[y6>6Vyf3Wf%g/u;s4hGu6?Rh-JvZ,!c%#&RoX54Rivj7uyvf8RgTKvZB%*!2sGh<vu5Rgq<=C::9bb~#dZ#T&Ta6Y.X*Dt>[y93Wf)coZ(T,6VyifluvRgC@95@B@bX~/hFu34cC#T,k/unq8w8Q5RkUklwQuzunq8w8Q5Rk8d/rJu?v8w9)-&!a0a;a&aIWejg3sEr/h1s<DtDJvyZqY5aws3Jvy!&Wei~Hr1:au5@Bag>23E~5c:Z&bX};kKv?w&unuVu5Rjc;>bs)#~@:Rh.=ay<a]C;b`}Vd6s/t{uAvoaxa()!a,a7%-a#a2Dt,[yF2Wo[>6Vyt3[xuNuPRi&NuPwpi#RoWh?vf8Ri%Jv]!%Ri:KvxD!.'2WeAjZu`q9rxu,Re7woeAg-unLq(qA_/*2Wg_g3u5q^9:4E}/jTrxrzv=Wkkd~0UX#^^Xa-a1a5T&a=U1a'*aEa]!a*aPaA-adok[y54Rn>;:p3~Dp5g9rpsFNvZqjg3uJp4~<5p0Pw;5qlJwNZt*@3p1Pw:5p/Ou!5p2JvG'!6Vye=<qnJvh_[xhg3v,Rh3kOwOw-sDuev/Re^dha[a%!%!a+#Ta7)-5TaCaO!aka!a)sf[yb2>Rl!9ARiq5E}Qg=ucRkBE|oJrJ_@Wk~@Wk{JrJ_@Wk|@WkyJrJ_@Wk}@WkzJvO_[y2g-vMRmiKuYC!)&>Ri;>Ri<@3RkNc](X#@9Rk=g5vuRmhKvDB!+'=]meg3u4Rmgd)#Y'Vz3CARmfd`a+!%T'!+#Ta1Ta6TaM-sTDt9[yA9sYd'%Y#s[[xpj:ueunaXRgEjRq,v-vuqdd2'`#6Rev<32@5>:2<E}5xIo9a*X#Y(;5RePJvD_g>vyRgNj8w)v8<wggs:RgXiZt|vjx,hSq3ah!-(~@:Ro/Ou!5RhWj^v(pyw8unRhUdx-UY#^Ua.a3a70!)%UX1TaDa)'omRiRRhE[y:3Dsz=Br,>6Vyj3[xkg6ruwjcqsrPw;5r*Ku]D'Zt-@3r(~?r.i[vwv]dU1a--U#`a4(g/vsRhPOu!5RhLj:rmu9Wo!~@:wdh@g/vsRiTjXuvvNr}:RhBj^v(pyw8unRn]dz1UYa'a+^Y(!aETZalaRY.Ta?a4[yDJw1!#qLsW>6Vyrfzq-pLflpwRe|Js>%!Dt@3Dt&Jvy_[xs~HrnjMuwpsw'RecKu+D#'!t<~Grl~?rjg5u-x,gwp{ah!-(~@:Rg~Ou!5Rh'jXuvvNr}:Rh#cW#X/c;&!#2sLi[v7u7RgpJv)(!iLrxu,Re6j7v@s@5Se[e7d`aW!Za(a`T.a#!a3!&aDa-!9)Dt_=6s+3[x~~DR|h~DS6avhGun5RkZj3w)v-]mkKunB!&*]kb97R|i<ARk<c:Z(6Vy}Juh'!wziMRoS:F|vkLuauJv5vtvQRh1d='T+Y#VyO~DR|jcF#T'7R|g97R|kJv3'!ay<Rj,Jvh&!:ReXcsa6*a+#a#_aIRf9aLRf?c,Z&Rf5Rf7c.Z&Rf;Rf>cQ#%T'p-Rf8Rf=ct#%'(*!,p,Rf4p+Rf6Rf:Rf<d~'Ua%U*^UYa(!a,-!#a4YaTalaEX0a8a<Weo3Dt/3Dsx=Br93Wen~Dr;~<5p<JwNZt2@3p=Pw:5p;Ou!5r3c7&!#:p>3Ds}KvGB)_6Vyk2sM=<r7x'eovA(!hFu1ARf}cV#X&@r5j6rvwQa^Rf3c=Za'wkghJv__g;unRggA53B9=b^}%j6uduo5Jq;!(hIv%2Re`Ou4ARe_e%a#^^^Xa&!a*a2!&a6YaP!*ad!#a:aE/5Rn?[y@>6Vyp;:pE~DrY~<5pBJwNZt8@3pCh=rt3rWPw:5pAJup_[xoNuPpF9c!#'45pD5ARn)d8#X'X*3@rU72s]h>v<<sSjJpqvewOJq/(!hNw'5ReBk0s2u3w/w'5ReE5@Jq.!a+JQ!&WeU23d(#Y&RjG5]jBk!u7w&u0udARjEe#+^^^Ub#!a2/a`Z(agT1!a-a;|@TaG!aS[yV=Re~fow'RguNuPRe?bz#'>RoUWeL>:Cbb|?JwPZtVg6ruRmzJvD'!6Vz(g/vmRh~Jvy_[y(g9voRgyx*cy(#2>Ri2B9b]~9kIw9u7rluJu3Rg]dI#a%UY'@=p%CAx.gQZ&RhwwygtRm{x5g_Z'+ABqR9Woa=Bp&dV#^*Xa'!&@o{g4v]Rk;Jv{!%Rk[wkkiA5RkiwwfUB=x,fUuqC&*!>RfTg8v0RfV~ARfSd;rJsAuAv9wR'ae+/aO!a@aza/a#[yQ@Wg!2Wemg3sEr0JvB_g>uvReWg2v+Re=KupB_+[y!2AbY~-~Hr2AJwD!(h<~El>h<~El?Kun@+_:9b`}Kg-v/Ri3g;vtwyk_9]k_d=&T#*U.6qh@Ab`|K9:H|CJv[!&3Dtex'fDwC%!Rf[9WlMd[(^X,!a%Z06Vz!@WgBg=v~Rgvg,QRe@awd,#Y+jTv|Q~EfWj]uNr|~FRfXdy#Y&^Ua%!aO.!(a)Ua;=!a@aKap!a-,a!Ta]a[rSa]p?[y82sK=Bq~;:p:~<5p8Pw:5p7d'#Y'Wf(;RnRi[u4w&RgJJvG'!6Vyh=<r#ijuuv/sIKuYD'ZtG@3p9~Gr&d2#`(g<vtRgFj`u5w&rqpxRf2CJuY!+:wfnTOu!5Rg}jNs1ucv&RfwJvA!&3@q|BDcC#T,k/unq8w8Q5RkTklwQuzunq8w8Q5Rk9dga#!a'!a=#a0!:+Tb*b@aO.a4!aba8aFJv^}?!VyR~Dr<g;u%Rn.~<5p[x'e`wNZtR@3p]Pw:5pZhNvjBp.woe_g5u-r4JwF!%DtO3:ooc7&!#:p^3DtpLuGw(!+%)Dtk6Vz#2sd=<r8d'#Y([y#<x3gJt`w@!)%}MRiowzikRij=]ilxAf3,U(#B2Rf#g0v-Rm[ck{`U#]giKv3>)!&6Ri154s,KuGB_%@r68r:dJ|t`#X(9<E|u2@H|rx3gJu?w'!+'1Nu7Reg4=H~+9<wxgY95Rm]xLggZ-`(X}U2:Ri4h<uOawRmsJv__5@bb{jbV~3dka#a'a]!,#a+U=a>b6a3b%!/aKa/)!arwve^VyJ;:pR~DpTg3uJpS~<5pOPw;5qmPw:5pNOu!5pQJvG'!6Vyx=<qoJvA!{~Jup!%@qk7Rn/KvyD!}''[xz;>wkh'?Rh,x8gyt`w5D!&),(SgyccRgztJ@3pPB5p#d'(Y#<]mmifubw&RgoJvE&!82s^JvF&!8Rf,ADb]~;x=h'rNu]vK!,%'*0RnORh)4Rh*AqQg-vaRnNg;wHwkh'ba~4cE#Ta*x3gctyw@'!+%RnFRnD<4Rn@hFvK5RnCxWg[#`&a0Ua()`1Rm75Rg[c]%X#qi8Rg^NvdRj>BwzgZauwji7Rm6A4wgg]d1#&(*,.0a#Rm;Rm<Rm=Rm>Rm?Rm@RmARmBe%#^^^Xaea?aC/b+(,!a+a#!a/!>a&Ta<aKbD!2wphBRnk[yPw}hE|.=Br-3Dtm>6Vy~g6urRf.x,hPrNav!%'RnqRo%Ro#Nu;q[Pw;5r+JwNZtM@3r)d'#Y'Weh;xChL#`&RnmRnoKu}>%(!Rne~Bs-;2wjcussJv+'!aYSO}6@B<5?ba~8LrNvj!.%*ROwungw~ng~:9;Ri^>wtnig;wHRnixDh@|(UZ.x1h@|)!#:2<H|*xHn]#-UX'3Ro)z=iT}6ARns=Bwsn_wpnaRncw]aR(#UXa&Ua*a/=]iPd'#Y&Ro'WnXf{QRm2hNvj]nZd`'T~&1`{|`#9b]{}c:'!#Wl{>@=be}]?cl{{U#:5Abb}Jds#^YaF!a*b4a#a3aPa>&Tb!bH!*a_!Eau?/a&RjY<]gj>6Vz*;:pe~DrZg,QRj1JwNZtX@wihspcJvZ&!VyX9WmOJu|!|N2WmHJvh&!]ht~Bpbcn&T(!#RmQ<s7Nu;padH#X'`+WmJ@>RmKCARhnKup=!)&Wf+:RhqNuPpf9c!#'45pd5AwghpARn(Ls@w!%,)!RmP@Wfe<E|IJva!&WmNg8vsRmLd`*.`#Y'Xa!axRn*]hrA8Rhug5s@rXg8u!RmMd8#X'X*3@rV72smdI*#UY&RmICARho~GsgxVgd)Ta'U-Y&Xa!T#RnEWnA@Wffg1uDRi0hFvK5RnBxGnG&#`%owp)@wsf+bX}Ze-*1!a*^^^Ua|!#a.aq&Ya2!a>.a6!a:aO`aJDtL[y`@Wg#>6Vz12@wzoYRoZNuPRi!NuPRhzg=ucRi,@=b`{Yg=ucRi-ACJvB!&Sh[ebSh]ebi`wUuFRm4Jw2_[y0JvB!.<Ju(!&SoG}6Shd}6<Ju(!&SoH}6She}6Kur@._g5vHRieJvx!{L2G{Kx6gd'T#?Rh82Wi5cZ#X(g1w)Rm5dW-Y(Ta#!a)!#aYa=wnfE=su2>>bU{0j9udv:<svj8uQv-7RgHdE%#^'sq9sp=>Bb_{TJv`!&g/r|snj6v(us5d,#Y(56H}[978H}]Jw5!&g1rushJvB!+j;v{u5?zDhd}6}bj;v{u5?zDhe}6}ce*#`(^^^a[aea!=!a6a*aoXb1a.!aAbL!b>,b'aL!aV@Wf|2Wlg3[y/JwNZt^@3piPw:5pgJunZou3@rsJva&!Vy_g<v~Rm#JvG'!6Vz0=<r{Ju{%!:pj@WfsiXuJu3Rm:JvZ&!WfA~Bph@c4Z&Dtwax5rubx(#:awRk1@d,#Y&RfjRfid1#,Y(@Wfp2Wlrg5s@ryKu[@!,'=]ig9wlk?Rk>g5u-rqJvy'!@9RkQcH(T#=>Ri~@<wkj(Wj(KuZB*!&<7rw@9RkRcH(T#=>Ri}@<wkj)Wj)dg(Ta2Xa9X#`-!a*CARhg@@=I}d9x;c~#X%so=<sj>2@@=aybb}XjWv0Q~EfEj3vLv;<d,#Y(56H}`978H}_dgaPaFa'a/!#a3Y0a_a;a|!1(a7-[yE3[xt;:pJNvZrrg3uJrvJwNZt=@3pIh=rt3rxPw:5pGOu!5rpJvG'!6Vys=<rz@c4Z&Dt(ax5rtJvZ!&~BpH@wsfNg-vaRlNci*U#=<wei<F}a5@Jq.!a*JQ!%@qZ23d(#Y&RjH5]jCk!u7w&u0udARjFd/prq=tyvpaEa(a:.!a1aZ(@@=I}:9wpd%=<sX55w_h}@@=I{t=ay<aU@@=I}T=ay<2@@=I})?C9:9au@9Cb]}DP~=x-fAZ(2Wl1=ay<aU@@=I}>5@d##Y+jTv|vV~EfFj]uNpn~FRfGdgaK!Z2&!a8a-Tb({E!acTbM*!a(DtY[yYd'%Y#sl[y*hHvh>Re5x2c{Z}.j4uCvcawRiMd+#X+_x&d!},<5RkX;2Hzw@x,gavfB-!{CcF&T#Roe;RodwWbBg5urRgaKvHC*_6Vz+<4opieuew&Rmq@d]&Y)X,T#X0Rh}<BqP=4qS9:ReMg/ujReNJw0!/<Jui%!bd{kawwnemRelAxUa?a3#*.&UX(Ya+a/RhvRnQ<o}9Wmtd-#Y&RgSRmw9;Rmxay=Rmyg-vaRmuxEhSrNu,v-voC!%(aR.a(a7+1Ro1>Ro5CE{A9b]{@;5x#eO{:g;urRi+KrNA!%(Ro3>Ro79;Ri_Ku@>{;&!x%gX|{KunA_+g5QRj/g3u5Rj#g>uERj%wio/xRhS&!,!#^1U}wba{8>>@=be}qC@:D5ba{7Ku+A&!}x?ba}t>>@=be}se(aA^^^Uat!b0#{pa+awUazbGa#aLb9bgaWac'a5TbS=Br!d1#`%scp_Jvl!#rT>Re0JvX&!VyN=H{Fcm#U&:pY=ReaJv2&!]h0=]nUJvG'!6Vy|=<r%JrM_=]h2@Wlud'#)U'Wf'b]{i=]h/Jvh!&~BpWg=v]RnMx+ny#'Nu;pVwjnu=]nwxJnx,T#`&Reqwjnt=]nvieu9vrRjLLuYwP(#+!th@wih5pX~Gr'g5v/Rh4KunA'!-CARnP@wwiN:Rm_9x'cvw>!|l=<saKvAA!0&3@q}>w^e1bp#&Re2Re3BDx7gH#T|f5H|eKuZ>!%(:qNAH{]Jv6!+3B2B9=b^{X<5<B92:E{ZLvhwA(a;a%!igQuyRmad+#Y}m@3Rh5d8#X'X*:AqUAHzmaxwbh<aXRnVcF}RT#Nw&cj#U(BWnug/vsRntdka)(a3+.Zb7aYYan1!bVa@Xa}[y^@b[{G=H{+hFu73Rj&Pv#5ReQcK%T#sig1v{Rj'Ku+D#'!t]~Grm~?rkKuMB!01d5#`'Vy.ta3Dtu~Hroc8#'{^45s85AwZbP&!#Rn!wghxWn#KvEA!)&2RlA2RlBx:h|#(T,=]j09Wobz>x]z/@awRoTd+#Y(az]hFhCrm4d,#Y+jTv|Q~EfMj]uNr|~FRfOdCa!Xa9_X#@<plJvf!%b`{(9;Rgwc;.!#2x7cw#T|UDb]|T5Ju={(!=@E{&Jv)&!Ab`{'awJvf!~*>>@=be{#KuY>!+&4Ezyi[ugv&RjIdea+T)#UXa&T-T&a!Rh9auRmW=]kLg5vuRn+g3u4Rn-Ow6ARn,hHus5xNk?#UX(U~)/g8v0RkD~AwkkF?Ri.OuNBwkkA?Ri/d|a2`a*^UYa.!aBTZaTa'Xa;!(!2!-a#b2[yC>6Vyq3[xr2Wi?g1rusVh%s?DtF~<5rbJs;%!DtBfswKtCj[uvuSsEu3RgVx3o:u+wN'*Zt;@3rd~Grh~?rfg8w)Lq)qE&-a%!>bI|`jWv0vV~EfCjTv|vV~Ef@j]uNpn~FRfBcK#T']gWNu7x,k7q4ai(0!hHv8<RhmkMu9vrsBuev/RhlCJvB!,g<v{wchh~@:Rhji[vrv{wchi~@:RhkdS&a5UY#Ta!RgPwwiI5BwciI~@:Rh`x'iJvj'!5]iJPu8Bwch]~@:Rhach)U#h3rp]gLh@t|Ax,hTq3ah!-(~@:Ro0Ou!5RhXj^v(pyw8unRhVd|)`,^UYas!a?/a2Z'a^Ta{Tb7Ta(a#!a,Wf&9sZ3DtAadamov=Bqt3[xig8vsRm~>waiL2b`{QJv*_Ouv2qgj<v]v2BqfdR'X*X#Y-@3qr~Gqv~?p6hHv-]glPup5Lq+q?_%*b_{qF{n9b^{rOu4ARhpKvCD!+&~Bqp:5Dbb}nwoiKl&unuTuBv]v+ueunaXRf0=Jvh!0nKufu8v1w&w7q%w&uHrz:Rgnj5w,uxDJq/(!hNw'5ReCk0s2u3w/w'5ReFd>Za&!*UaA=<wkgsRnSJv^!%Refifw3vyRgOKu_B'!,<]gkiiu:w&Rh<=C@a^<B57@2F{[<B5@aW:=3away9A5aW=<B=C@a^<B57@2F{Ie-#`(^^^bCara.b8aza6!/bZ,!adTbnTbOb+aFaS!aAT9@Wf~2Wli3Dtl2@d,#Y&RfnRfmJwJZtN~GqyJva&!VyMg<v~Rm%iXuJu3Rm9Jv[_=]ih9wlkDRkCd1#`(@Wg>2Wls3cH#T(@<Rj*=>Ri|b~'#23s9h<~El.d'#Y&Dtxi^rzvdRl#d*#U%(o|B2s`hJwSaxRmDKv4B&!1:Rmdd5#`'Vx}to~Hq{x'f1v3(!BA5ba|bJv_&!Wfug1v]ReIdO+U/Y#&G}-8wze=Rh{g1v]ReHg/uQRf/by#)ibQwERl/cH#T(@<Rj+=>Ri{cNu+vlax-!(#a0qa9<Rii2;;bU{H;x<i=&X#Rk`<4wwi=C9H~8xAI(Y#<azRi@45wXI<B9;5bb~7dL(X#Xa(+!aL6Vy{g5QqOau:5au2@ay547EzbxOcU(UX-T#Ta#:Cbb|A?wjh/b_|SOw6ARgtihr}u7Rhy<d1#T)X1@@=I|~=ay<2@@=aybb}Sj3vLv;<d,#Y(56H}A978H}@dGpvs@uAu`vcw9*!aFa+ai%(b!aXa8.a?a[ozWey=sU2@G}Nch&U#Rf_WexKu+D#'!t:~Gr`~?r^j]uNr|~FRg*j^psurwJt|RmcKv)@&!)7Rkv~Br[@wxfO:Rl3co#U'6Rezj_q#vIuavjRltwzeyh@vr5JqD0!>aY?C9:9au@9Cb]}9cl#U*5;5<H||jbuus1ucv&Rfvg1v~d/pppzqFr^a--a~!aMat1(hFv;Wiz@@=Izoj5uuv-7Rix~Cw`fk2WlVcZ#X,k)u3vWs@u2]ktg;wEx'fBq(_2Wg/jTv|vV~EfoJv]!15x'hzqG!(P~EfU~CRl_j6v(us5x4i-#T(2WmZ?C2F|d>Kq<aj1!*jTqIsBv=Wl`~Cw`fi2WlWj`v0u*~>RlR=c>Z,k#u3vWs@u2]kr<c1Z+jTqIsBv=Wla~Cw`fm2WlXdmb3!a{(arZa`bkTa%TbQTa-a9+c'!aM!/[yL=Bqug.w'RifhFvyDRj.g>vgwyk^9]k^Jv3_@WfbAARkhJw2_[x|JvB_wkoIRoKwkoJRoLd'(Y#<]gm=<9<H|yd'%_X#skDtb3awwqkgNulRkgdB#^',9:p'hJwSaxRmEBwVb8@4=H|qLu+w50&!)@3qs~?pU>Awwn;;Rn=c:Z'ARn<=<qwKvC@!/&~BqqJv6!&]eVb^z^xRge'/a%+^`#Sge}6<4Rn3=]n0Pw2>Rn8Jw0!&>Rn:>Rn6cY#a7+!a&=<wkaNw~h3z_c5Z{=wjh#=]nLKv^D!&)Vyz=bW|swYb<WetcG#T(2wxa@qVx@gD#Y&b^|V5JwG&!5bb|pg/w&RgD@x=kHs=uAvn!a%%/'+RmSRh694Ro`g-vaRmRhHv-]mlxCcS#`&ba~.5cD#Ta)P~=d,#Y(56H{>978H{Dd_#{2^Y%_+qbbb{6g3sERhsbU{?dfa.,`a(Xa<!aiX#(55RiG54RiHcI#T'WiU3RiVNvdwtfcRlKNvdd,#Y&RlHRlExQgf.1*^T'X#Sgf}6Wn4=]hfPrk>Rn7Jw0!&>Rn5>Rn9Lunw?&a2!,5<oq@@wqfdRlJj5Q~=d,#Y(~ARfcOuN]fdDKw;ay(}i!547E}j?cI#T(@5bV}iCbV}hdv(^^Tb?a40,b##Tbo!a*bR!a<b|a/!aKai!aU[yK=]o^g:v>ReGJwPZtK<7Rh+h<~El,Pv#5ReR@awwxjCg,ulRjDJv6&!]j!z?aQeeg>w=Sh<eeJw;!&axEzOg,Qosc!#*:wkeJ]eJ>x'h-u(!%Ro.w~h.zPdNZ(X,Ya![x{;9ReY;wkgxRiF:x?ap#Y&RmUg<s2Rkod]+UY0TZ'!a&A9sw<=bczLNvuw{gqzNhJwSaxRmCKuLay!#&s_Rf-55b^{uJvZa!!c%#(55Ri654wmiu5RiuawLu,vp!+}^%b_}Y9;wkgxba}o>A9:=b^}zKuh=a''!3awRk3c*'!#aHRk6c+Z&Rk5Rk4Jv)&!awRjSawd9*`#0?C2@EzMj8u<uJ5RmbjQrquJu3x,k>uq@_+=ayb^|W~ARkEOuN]k@7dhzV^X/X&a-#zRzSb`zXcJzTT#2WkVKvDBzW!%FzY9;5bbzWjQrquJu3Jw3%!b`zU=ayb^zQd:#X(T-a!6Vyywxh}=b]{Jg=u1RiAdGp~qHtzv!w(wA+a+a;<!aJaYai'anasb(=azRmV:Cbb{MLq2vb!%')RjuRjrRjtRjqx3jnqCw3!%')Rk(Rk+Rk&Rk)Lq2vb!%')Rj{RjxRjzRjwLq2vb!%')RjsRjpRjfRjex3jcqCw3!%')Rk'Rk*RjkRjl9<CbbzfOu4ARhxLq2vb!%')RjyRjvRjhRjgx=joq*uKvb!%')+-Rk.Rk%Rj~Rk-Rk#Rj}x=jdq*uKvb!%')+-Rk,Rk!Rj|RjmRjjRjidAq&qKs@uAv8Aa.'*-a@a&0!aM@a5[y73Dsy3Ds|3Dt):wxgI2sHJwJZt.~Gqxwsf0ikrzt}Rl0Jvy_[xj~HqzKv_A|D!&WfP8axRoVcf,U#k(v]v+ueunaXRf1Ju}'!g8u#Ri=jQw!sCunLprq>!,')~<5qeGzq9F{W=c##%s5au:5aU3CBE|;d4#X(D!a&6Vygx(b;#(=]ed?C2F{N<capoq2r[a&!aPa9,'Pw;5s:@@=I|,55w_h|@@=IzcP~=x'fCqB_2Wl2>aU@@=I|1OuNBc1Z+jTqIsBv=Wlc~Cw`fl2WlZ~AcTa%!Z+jTqIsBv=Wlb~Cw`fh2WlYk+uNqJsBv=WlSg,u3dca3#UXaMYa)TaB-=cM|7T#<bI}l5@B932:aV2G{BOuNBJq:|M!5Ezt=<B=C@a^<B57@2F{v>cB{/T#=ay<bI{3Jv6!a.6BKq0ah&+!5E}HP~Ef{978BaU@@=Iza<7d#.Y#978BaU@@=IzH~AJq0!(@@=IzG978BaU@@=IzFe,aU*Y&^^^bvJb,b:bFad!a,c2Ta>aL.bo6!a#CbTa'T#Re{2Wlh2@G{yg6t~Ro_NvdRfticuRQRllJv3&!x&c|zs@Jw3!%RflwpfkRlpKuL;%(!Re<@G|C2GzdhIvuBwgjAg-u0RjAKQB%!(GzZ@G|5NuuRl7d='T+Y#Vy[g<v~Rm!==G|>JvA!)@wma=]m1ifuaw&RmnLs@vT'!|/+[y,g:v>ReTJw1!#qX=x!eC{bLu+wT&)ZtZauq_~Graci&U#F|89:r_Lupvq!.)&2RlG8RfaC=x!eF{_h?rpWlmd&'!#X|&]k::xJey#`'T|+<E|&2@H|%dE#(^,g;u.RiEg6vjRiC9xCkA{O|zY#g=ucRmXKs0@!&*@G|m@awRknJuh!,3d(}gY}eJvj!%Rm):Jw3!%Rm+Rm-Ls0w(&!a(a#@b[|6cZ#X'7RkxWgAOu4ARn'dH'U#Y*Vz-Wm'CARm}d]*#a%^a*T'aK!a<9bV{PC=p*Jw4!&SgxcbB5r]idw(wBRmF7xFkt#&`(Rm/Rm8E|!JuY_9:Rl5=wrgr2:bbxd@xXfB(a*#T+!.X0X1Ta/a'T&RlDRfL>RlyARl9b[z[>RfZ:RlL:RfRwlg/ARl;9;RlxKv,A/!%7s69<74=BA5ba{-8Bde#`a<XaKYa1,a'P~=wxfB2bZ}}?C972@@=I}r8@55B9;5bb}G978B2@@=aybb}3j3vLv;<Jw3&!>Rfk=ayb^}4~Ad1#`*@@=aybb{w2@>==<bbz]dx+UY#^UaF!a9!bB'Ya1.!ajXa#%olRhD[y=3Dt#Ov5BrHKuMB%!(Rf^Wep~HrJwkiQjKr|~FRg)Ku+D#'!t5~GrF~?rDdV)UY,Z/_7RkuG{<~BrBg,rlsO:235B@bX}|d?a1!#`(6Vyn5@d##Y+jTv|vV~EfIj]uNpn~FRfH7Lq2vb1!a9-978BaU@@=Iz9978BbU}#~AJq0!(@@=Iz8978BaU@@=Iz7~AJQ|}!978BbU}!JvkaK!AdUa21-U#`a+(g/vsRn~Ou!5RPj:rmu9WhOjXuvvNr}:RhAj^v(pyw8unRn[kPr}p|u7vwv]RiSBd;pppzq@qHQa?(b.!a.a`@.|xa(hFv;Wiyj5uuv-7Riw~Cw`fg2WlU978BbU|wOuNBJqG!(P~EfD~CRlQcZ#X,k)u3vWs@u2]ksg;wEx'f@q1_2Wg.j]uNpn~FRfqJv]!15x'h{qG!(@@=IzK~CRl^j6v(us5x4i,#T(2WmY?C2F{1>Kq<aj1!*jTqIsBv=Wld~Cw`fj2Wl[j`v0u*~>RlT=c>Z,k#u3vWs@u2]kq<c1Z+jTqIsBv=Wle~Cw`fn2Wl]dn1#c(a(b^a2!b/bAT(bj!aDa7bu,a_a{c0!2T0g:v>ReD2@G{42@G{5~DpM~<5rc=Bx6i>{RT#RnI@zCx]y]z:2Jv[!zr5Awyk]9]k]dD(Y+X#6Vz.g=wKtgwhaCwgmTWj2Lu,w%_+/[y-B;b^xeg3u3Rj-2@bX{*KrJ<!+'@Wg(g?QRlC@Jv`!%b[zIwsfII}8JQ_@w|kW|=Jv(%!AqcOuNBJvEzh!bYzjLs@wP#(0!oy@>RkdJwMZtc3Dtd@BcG#T'9bWxg2@2Fznd*#Y+;2x'c}w<zizixNgwa#Z'U+!/!a'!a+w~g~z6wcn{Rn}wcnzRn|5Rh%=]nJg5vuRmvNvdRlvcprJu}w*az*a#!%.a.'Bot9qT]kj@Wg'ay2Gzv@Jv`!%b[zEwsfHI}1;ck#Ux`<Cbbx_Lu+w!a&0*!wko*wwo,So,}6Juqxf!E}PigQuyRm`d3(`#8>Rn%:A5B;bZ~%KvhCa!a2!x>k7#Uxb@b{#xaRk7Jw0!)>wwhlShl}6>wwhmShm}6CJvB!.x'hhvj{!!5Bwkhhbaz}x'hivjz~!5Bwkhibaz|xEhTrNu,v-vpD!a%&/)a3a.,%Ro2t[CE{)@3re9b]{%wjo09:rgc:Z&Ro6=<riifuaw&RmoKrNA!%(Ro4>Ro89;Ri`dSaL'UYzxZb)7Rka3xRhT&!,!#^1U}vbaz{>>@=be}yC@:D5bazzKu+A&!}{?ba}y>>@=be}wxBh[t`u~vJvr!%a!a()a,a0a4RoC=]o;Ju(!%RoGRhdwjh`=]oAg>w#Ro?g5vuRo=NvdRl|Ku]C.!&;RoEJvB!%RoORoMBx'h[v+_?w~h`}~5?w~hd~!xKh]oiptu-utv.vp!#%&a30a@a'a+(a/aOp(o~p!RoDJu(!%RoHRhewjha=]oBNvdRl}g>w#Ro@g5vuRo>c[#X']o<CauRoRAd-#Y':RkpauRoQKu]C.!&;RoFJvB!%RoNRoPBx'h]v+_?w~ha}t5?w~he}ue!/UbhYacXaW^Tc&a;b:a-c/#b&aja1(!cL+!bKbt!bmcRc9aIc?8[yW3Dtt94Rg`Jv}!&SiRMzBhEebShEMNuPRe>x7gL#TzuwjirRipc<Z&>on;>z=h-MSh.Mwqczx'a7vj&!>Re4@=ResJt__NuPRi*NuPRi)j]uNr|~FRfzKrJ>_+@Wfy@Wf]2WocKrJ<!+'@Wg%g/QRl@@Jv`!&awRl<wsfFIzgLu(w*!.*&ShBMwvhIRhI9;RhNx1hK'!#Sn]Mx1hK~0!#:2<H~7cNu+w7D*'1ZtW>Rn1~?rOc:Z&Rn2=<rQ<7wjh&=BSnLMc]#X(6Vz)w[b=a!U#9wzgMc3#&(RgMRitRis<x,gKt`ax!&+SioM=BSilMc3#&(RgKRinRimKurB,!&SiQMzBhDebShDM6BJQ!(P~Efx978B2@@=I}WLrJw!!,a*&@G}O@9wkibRid@@x'fKwC!&SlDMSfLMjUv~Q~EfKKv3@a+!(hFv-]mpx/hYZ(C5RiWz<o/MwkhY?So/M@x,gbvfB*&!SgEM:SoeeehFu3:Rgbda(,^TZa)X/7Sg[eb:2RgI~BrMC@wgkc:wwkcRerx3h(uUvK!&*,SnOM4Sh*MArRg;wHRh(x=h;rJvPwI!a4',a'0@Wg&=BSh/Mg>w=Rh=g3w*wwgGRgGcW(X#;Sg}M2Gzk@Jv`!&awRl=wsfGIz`dKZ*T'Y-:RhR7RhQg5u-p`j6v(us5d,#Y+~Awkia?RicOuNBwkibba}Ld6p~tyu_vbAa'a+!a/'a3aEa8a!>Sh,ebJv{!&Sh@ebSaReb9;SgwebNuPRi(NvdRl)NuPRi'hHu^<Rm^Jvv_@Wl(g;u1Si/ebKu'B&!*Sh?eb@Wl'z@aPeb95Si.ebcpputyvjB)!,&a+0a%ShAMWeK@G}C@WfJ9;RhMwvhH9w{ia}ix,hJvRA1(!zAn[MRhHx1hJ~*!#hFv(BSn[MBJQ!(@@=I~'978B2@@=I}2db.Ua<'X}+T#a0XaG2G}E;wkg|wuh!Rh!x,hZu,@)!&So0MVy)C5RiXACJvB!&5RiY5RiZg8w)cG}*T#2@bU}=KsA>(!a.3wkhZba~(x,h^u(A!&(SoCMRhb5Bz=h[eb?w~hb~6x,h_u(A!&(SoDMRhc5Bz=h]eb?w~hc~6e)aA1T#T,^^^c-bMb&blcPaP(a/!0!bA=b5c@a(!bfbrc#2afwmhARnjwchORnp2Wlf3DtsNvdRl-2@wpa<]m0bx(#:awRk2@Jw3!%RfhwpfgRlnKQB%!(G{V@G|'NuuRl6d='T+Y#VyUg<v~Rl~==G|<Jv+'!aYShC}6@B<5?ba~8@Jw3'!g2QRljhLrpWlOd+#Y'g.w'rIg>w*wgj@g-u0Rj@Lu+wT&)ZtUauq]~GrGci&U#F|39:rELrNvj!.%*RhCwunfw~nf~:9;Ri]>wtnhg;wHRnhx3hDs@v~!/+'@Wfr@9RkSNu&Rlo=@<5GzoKs0@_+@Wl+@awRkmJuh!-3d(}pY#qWJvj!%Rm(:Jw3!%Rm,Rm*de&!1U-U#`)Re;@G|.@9Ri82@wjfvRlq=@<5GzpLvOvr!).&2RlF8Rf`C=x!eE{.Jw3_g2QRlkhLrpWlPde(!#U{s,UXa*Ta'[y'g:v>ReS;x0PZ&RnlRnn~HrKJw1}f!=x!eB|2w]aP(#Xa&a*Ta.Ua2a7=]iOd'#Y&Ro&WnWg;u.RiDg6vjRiBNvdRlzhNvj]nYJuW_2Wm3x)kFze{9d])!a.!,Y01!#&aC!a3RndC=ox~BrC@2b^{pg,rlse7x'ksuq!%Rm.E{xidw(wBRmGx9o+)X#wwo-So-}69:Rl4@xSf@a#XZ'X)X,Ta(/ARl8b[xc>RfY:RlI:RfQwlg.ARl:9;Rlwdn'#^XafaQa1X1TaHTa)@b[{zcZ#X'7RkwWg@Ou4ARn&x)kG#{,g7u/RkGdH'U#Y*Vz'Wm&CARm|bx#(A]gUbUzJj9Q~=d,#Y(56H}l978H{U7d,0#U*2>ABb_xZ978BbU{e~AJQ{g!978BbU{hxMh?ad{oUYZ.x1h?{l!#:2<H{mx3n[t{vl!,&a%3Ro(z=iS}6ARnr=Bwsn^wvn`Rnbd`*T}B0!#^X'BG{c9b]{a>>@=be}F?JvS!&BG{d7BG}(Bde#`a1X,Ya@!a'P~=wxf@2bZ}I56B2@@=aybb}08@55B9;5bb}<j3vLv;<Jw3&!>Rfg=ayb^}&OuNBKuLA!)a!P~=x#fD{f2@>==<bbzl?C972@@=Ix^d6rSu,v7w*C(0a)a6#B+a%!sQ[y?3Dt%3[xn~<5rLOu!5p@Ku+D#'!t7~GrP~?rNKvlaya7'!h+v-5qMg=t|cd,U#5AAaa5Abb{S@52B5@a[@52B5Gx[iXueu;d<#`a(!/549C;ag>23ExY5@Dah89b^~689Jv)!~2b[~1Lv'w(%*!a#bX|aPrmawRe]keu7uhv-q6rxu,q`xTo]/a5aU!bNaDXbi!b-!ao!b<bwA!#5@B932:aV2G|:d-)Y#hJrL>RhG<7@C5<H|_=Cau:5aj5@B932:bJ|ng>vIbs)#?C2F|9jPv0w.vISh-MKvUaz(.!9ABbb|[5;5<H|Eg>unwfh;9:4E|YjQsBt|vjx'hYq3!(?C2F|J:2<BaY?C2F|GOu!5x,g|p{ah!-(?C2F|c9:4E|OjXuvvNr}:Rh&i[w*t|cd+U#jJvsu)vsSn~Mkfrmu9p}u7vwv]So!McW#Xa!ax5@A5aY:5;5<H|>kJv~vYrquJu3x4ib#T)2@SmZM?C2F|Bj:rmu9@xPhI(a*a#U#`a3-5Abb|L~@:RhK9:4E|0@52B5G|#C::aY?C2F|-:2<BaY?C2F|.5Jvk!a)javYrquJu3x4ia#T)2@SmYM?C2F|HAxPhH(!a#U#`a*-5Abb|4~@:RhJ9:4E|R@52B5G|F:2<BaY?C2F|Sc^#Xa2j=Qq5CJvB!-g<v{z;hhM?C2F|Zi[vrv{z;hiM?C2F|XKsA>!a)-g<v{z;h[eb?C2F|]i[vrv{z;h]eb?C2F|^iZu.vix,hZq3ah!.(?C2F|QOu!5ShXM:2<BaY?C2F|P", 13494, 2713, 49, 25, 61);
+// node_modules/htmlparser2/node_modules/entities/dist/generated/decode-data-xml.js
+/** Packed XML decode trie data. */
+var xmlDecodeTree = /* #__PURE__ */ new Uint16Array([
+	512,
+	26465,
+	29036,
+	7,
+	0,
+	2,
+	4,
+	116,
+	24638,
+	116,
+	24636,
+	8693,
+	29807,
+	24610,
+	621,
+	1,
+	0,
+	0,
+	3,
+	112,
+	24614,
+	111,
+	115,
+	24615
+]);
+// node_modules/htmlparser2/node_modules/entities/dist/internal/bin-trie-flags.js
+/**
+* Bit flags & masks for the binary trie encoding used for entity decoding.
+*
+* The trie is a flat `Uint16Array`. Every node starts with one header word:
+*
+*   15..14 VALUE_LENGTH   Number of words the value occupies, +1.
+*                         0 = no value; 1 = value inline in bits 12..0;
+*                         2/3 = value in the 1/2 words after the header.
+*   13     FLAG13         If VALUE_LENGTH > 0: semicolon required ("strict"
+*                         entity; `;` is never stored as a branch).
+*                         If VALUE_LENGTH == 0: this node is a compact run.
+*   12..7  BRANCH_LENGTH  Number of branches (or run length for runs).
+*   6..0   JUMP_TABLE     Jump-table offset / single-branch char / first
+*                         run char (see below).
+*
+* Branch data follows the header and any value words. Its shape is selected
+* by (JUMP_TABLE, BRANCH_LENGTH) in the header:
+*
+*   Single branch  JUMP_TABLE = the only child's char, BRANCH_LENGTH = 0.
+*                  No branch words; the child node follows immediately.
+*   Jump table     JUMP_TABLE = first covered char (> 0), BRANCH_LENGTH =
+*                  table length. One word per covered char: 0 = no branch,
+*                  otherwise the child's offset from the END of the table,
+*                  +1 (so 0 stays the no-branch sentinel).
+*   Dictionary     JUMP_TABLE = 0, BRANCH_LENGTH = number of branches.
+*                  ceil(n/2) words of sorted keys packed two per word
+*                  (low byte first), then n pointer words storing the
+*                  child's offset from the END of the branch data.
+*   Compact run    VALUE_LENGTH = 0, FLAG13 set. BRANCH_LENGTH = run
+*                  length (3..63), JUMP_TABLE = first char; remaining run
+*                  chars packed two per word after the header. The target
+*                  node follows the packed words immediately.
+*
+* Pointers are end-relative (rather than relative to the pointer's own
+* position) because that makes the common "child encoded right after the
+* branch data" case a small constant, which compresses far better. Offsets
+* to already-encoded (shared) nodes wrap via uint16 modulo arithmetic; the
+* decoder masks navigation results with `& 0xff_ff` to match.
+*/
+var BinTrieFlags;
+(function(BinTrieFlags) {
+	BinTrieFlags[BinTrieFlags["VALUE_LENGTH"] = 49152] = "VALUE_LENGTH";
+	BinTrieFlags[BinTrieFlags["FLAG13"] = 8192] = "FLAG13";
+	BinTrieFlags[BinTrieFlags["BRANCH_LENGTH"] = 8064] = "BRANCH_LENGTH";
+	BinTrieFlags[BinTrieFlags["JUMP_TABLE"] = 127] = "JUMP_TABLE";
+	/** Bits 12..0: the inline value of a VALUE_LENGTH = 1 header word. */
+	BinTrieFlags[BinTrieFlags["VALUE_MASK"] = 8191] = "VALUE_MASK";
+})(BinTrieFlags || (BinTrieFlags = {}));
+// node_modules/htmlparser2/node_modules/entities/dist/decode.js
+var CharCodes$1;
+(function(CharCodes) {
+	CharCodes[CharCodes["AMP"] = 38] = "AMP";
+	CharCodes[CharCodes["NUM"] = 35] = "NUM";
+	CharCodes[CharCodes["SEMI"] = 59] = "SEMI";
+	CharCodes[CharCodes["EQUALS"] = 61] = "EQUALS";
+	CharCodes[CharCodes["ZERO"] = 48] = "ZERO";
+	CharCodes[CharCodes["NINE"] = 57] = "NINE";
+	CharCodes[CharCodes["LOWER_A"] = 97] = "LOWER_A";
+	CharCodes[CharCodes["LOWER_X"] = 120] = "LOWER_X";
+})(CharCodes$1 || (CharCodes$1 = {}));
+/** Bit that needs to be set to convert an upper case ASCII character to lower case */
+var TO_LOWER_BIT$1 = 32;
+/**
+* Unsigned subtraction trick: (code - lo) >>> 0 wraps negatives to large
+* values, so a single `<=` covers the entire [lo..hi] range check.
+* @param code Code point to check.
+*/
+function isNumber$1(code) {
+	return code - CharCodes$1.ZERO >>> 0 <= 9;
+}
+function isHexadecimalCharacter(code) {
+	return (code | TO_LOWER_BIT$1) - CharCodes$1.LOWER_A >>> 0 <= 5;
+}
+function isAlpha(code) {
+	return (code | TO_LOWER_BIT$1) - CharCodes$1.LOWER_A >>> 0 <= 25;
+}
+/**
+* Checks if the given character is a valid end character for an entity in an attribute.
+*
+* Attribute values that aren't terminated properly aren't parsed, and shouldn't lead to a parser error.
+* See the example in https://html.spec.whatwg.org/multipage/parsing.html#named-character-reference-state
+* @param code Code point to check.
+*/
+function isEntityInAttributeInvalidEnd$1(code) {
+	return code === CharCodes$1.EQUALS || isAlpha(code) || isNumber$1(code);
+}
+var EntityDecoderState;
+(function(EntityDecoderState) {
+	EntityDecoderState[EntityDecoderState["EntityStart"] = 0] = "EntityStart";
+	EntityDecoderState[EntityDecoderState["NumericStart"] = 1] = "NumericStart";
+	EntityDecoderState[EntityDecoderState["NumericDecimal"] = 2] = "NumericDecimal";
+	EntityDecoderState[EntityDecoderState["NumericHex"] = 3] = "NumericHex";
+	EntityDecoderState[EntityDecoderState["NamedEntity"] = 4] = "NamedEntity";
+})(EntityDecoderState || (EntityDecoderState = {}));
+/**
+* Decoding mode for named entities.
+*/
+var DecodingMode$1;
+(function(DecodingMode) {
+	/** Entities in text nodes that can end with any character. */
+	DecodingMode[DecodingMode["Legacy"] = 0] = "Legacy";
+	/** Only allow entities terminated with a semicolon. */
+	DecodingMode[DecodingMode["Strict"] = 1] = "Strict";
+	/** Entities in attributes have limitations on ending characters. */
+	DecodingMode[DecodingMode["Attribute"] = 2] = "Attribute";
+})(DecodingMode$1 || (DecodingMode$1 = {}));
+/**
+* Token decoder with support of writing partial entities.
+*/
+var EntityDecoder = class {
+	decodeTree;
+	emitCodePoint;
+	errors;
+	/** The current state of the decoder. */
+	state = EntityDecoderState.EntityStart;
+	/** Characters that were consumed while parsing an entity. */
+	consumed = 1;
+	/**
+	* The result of the entity.
+	*
+	* For named entities: the trie index of the best legacy match so far
+	* (0 = none). For numeric entities: the accumulated code point.
+	*/
+	result = 0;
+	/** The current index in the decode tree. */
+	treeIndex = 0;
+	/**
+	* Characters consumed since the last recorded legacy match, plus one.
+	* Invariant at the top of the `stateNamedEntity` loop: `excess` equals
+	* the number of unrecorded consumed characters + 1.
+	*/
+	excess = 1;
+	/** The mode in which the decoder is operating. */
+	decodeMode = DecodingMode$1.Strict;
+	/** The number of characters that have been consumed in the current run. */
+	runConsumed = 0;
+	constructor(decodeTree, emitCodePoint, errors) {
+		this.decodeTree = decodeTree;
+		this.emitCodePoint = emitCodePoint;
+		this.errors = errors;
+	}
+	/**
+	* Resets the instance to make it reusable.
+	* @param decodeMode Entity decoding mode to use.
+	*/
+	startEntity(decodeMode) {
+		this.decodeMode = decodeMode;
+		this.state = EntityDecoderState.EntityStart;
+		this.result = 0;
+		this.treeIndex = 0;
+		this.excess = 1;
+		this.consumed = 1;
+		this.runConsumed = 0;
+	}
+	/**
+	* Write an entity to the decoder. This can be called multiple times with partial entities.
+	* If the entity is incomplete, the decoder will return -1.
+	*
+	* Mirrors the non-streaming `decodeWithTrie`, but with the ability to stop decoding if the
+	* entity is incomplete, and resume when the next string is written.
+	* @param input The string containing the entity (or a continuation of the entity).
+	* @param offset The offset at which the entity begins. Should be 0 if this is not the first call.
+	* @returns The number of characters that were consumed, or -1 if the entity is incomplete.
+	*/
+	write(input, offset) {
+		switch (this.state) {
+			case EntityDecoderState.EntityStart:
+				if (input.charCodeAt(offset) === CharCodes$1.NUM) {
+					this.state = EntityDecoderState.NumericStart;
+					this.consumed += 1;
+					return this.stateNumericStart(input, offset + 1);
+				}
+				this.state = EntityDecoderState.NamedEntity;
+				return this.stateNamedEntity(input, offset);
+			case EntityDecoderState.NumericStart: return this.stateNumericStart(input, offset);
+			case EntityDecoderState.NumericDecimal: return this.stateNumericDecimal(input, offset);
+			case EntityDecoderState.NumericHex: return this.stateNumericHex(input, offset);
+			default: return this.stateNamedEntity(input, offset);
+		}
+	}
+	/**
+	* Switches between the numeric decimal and hexadecimal states.
+	*
+	* Equivalent to the `Numeric character reference state` in the HTML spec.
+	* @param input The string containing the entity (or a continuation of the entity).
+	* @param offset The current offset.
+	* @returns The number of characters that were consumed, or -1 if the entity is incomplete.
+	*/
+	stateNumericStart(input, offset) {
+		if (offset >= input.length) return -1;
+		if ((input.charCodeAt(offset) | TO_LOWER_BIT$1) === CharCodes$1.LOWER_X) {
+			this.state = EntityDecoderState.NumericHex;
+			this.consumed += 1;
+			return this.stateNumericHex(input, offset + 1);
+		}
+		this.state = EntityDecoderState.NumericDecimal;
+		return this.stateNumericDecimal(input, offset);
+	}
+	/**
+	* Parses a hexadecimal numeric entity.
+	*
+	* Equivalent to the `Hexademical character reference state` in the HTML
+	* spec. Digit parsing matches the hex loop in `parseNumericEntity`.
+	* The accumulated value is preserved for numeric validation callbacks.
+	* @param input The string containing the entity (or a continuation of the entity).
+	* @param offset The current offset.
+	* @returns The number of characters that were consumed, or -1 if the entity is incomplete.
+	*/
+	stateNumericHex(input, offset) {
+		const inputLength = input.length;
+		let { result } = this;
+		let { consumed } = this;
+		while (offset < inputLength) {
+			const char = input.charCodeAt(offset);
+			if (isNumber$1(char) || isHexadecimalCharacter(char)) {
+				const digit = char <= CharCodes$1.NINE ? char - CharCodes$1.ZERO : (char | TO_LOWER_BIT$1) - CharCodes$1.LOWER_A + 10;
+				result = result * 16 + digit;
+				consumed += 1;
+				offset += 1;
+			} else {
+				this.result = result;
+				this.consumed = consumed;
+				return this.emitNumericEntity(char, 3);
+			}
+		}
+		this.result = result;
+		this.consumed = consumed;
+		return -1;
+	}
+	/**
+	* Parses a decimal numeric entity.
+	*
+	* Equivalent to the `Decimal character reference state` in the HTML
+	* spec. Digit parsing matches the decimal loop in `parseNumericEntity`.
+	* The accumulated value is preserved for numeric validation callbacks.
+	* @param input The string containing the entity (or a continuation of the entity).
+	* @param offset The current offset.
+	* @returns The number of characters that were consumed, or -1 if the entity is incomplete.
+	*/
+	stateNumericDecimal(input, offset) {
+		const inputLength = input.length;
+		let { result } = this;
+		let { consumed } = this;
+		while (offset < inputLength) {
+			const digit = input.charCodeAt(offset) - CharCodes$1.ZERO;
+			if (digit >>> 0 > 9) {
+				this.result = result;
+				this.consumed = consumed;
+				return this.emitNumericEntity(digit + CharCodes$1.ZERO, 2);
+			}
+			result = result * 10 + digit;
+			consumed += 1;
+			offset += 1;
+		}
+		this.result = result;
+		this.consumed = consumed;
+		return -1;
+	}
+	/**
+	* Validate and emit a numeric entity.
+	*
+	* Implements the logic from the `Hexademical character reference start
+	* state` and `Numeric character reference end state` in the HTML spec.
+	* @param lastCp The last code point of the entity. Used to see if the
+	*               entity was terminated with a semicolon.
+	* @param expectedLength The minimum number of characters that should be
+	*                       consumed. Used to validate that at least one digit
+	*                       was consumed.
+	* @returns The number of characters that were consumed.
+	*/
+	emitNumericEntity(lastCp, expectedLength) {
+		if (this.consumed <= expectedLength) {
+			this.errors?.absenceOfDigitsInNumericCharacterReference(this.consumed);
+			return 0;
+		}
+		if (lastCp === CharCodes$1.SEMI) this.consumed += 1;
+		else if (this.decodeMode === DecodingMode$1.Strict) return 0;
+		this.emitCodePoint((this.decodeTree === xmlDecodeTree ? replaceCodePointXML : replaceCodePoint$1)(this.result), this.consumed);
+		if (this.errors) {
+			if (lastCp !== CharCodes$1.SEMI) this.errors.missingSemicolonAfterCharacterReference();
+			this.errors.validateNumericCharacterReference(this.result);
+		}
+		return this.consumed;
+	}
+	/**
+	* Flush locally-tracked walk state back to the fields, then emit the
+	* recorded legacy match or reject (cold path — at most once per
+	* entity). Called after failed navigation (leaf node, branch miss, or
+	* compact-run mismatch). In attribute mode, reject if no legacy was
+	* recorded at the current node, if we descended past it, or if the
+	* pending input character is an invalid attribute terminator.
+	* @param consumed Locally-tracked consumed count.
+	* @param excess Locally-tracked excess count.
+	* @param char Pending input character (may be the mismatching char).
+	* @param valueLength Value length at the current trie node.
+	*/
+	flushAndEmitLegacyOrReject(consumed, excess, char, valueLength) {
+		this.consumed = consumed;
+		this.excess = excess;
+		return this.result === 0 || this.decodeMode === DecodingMode$1.Attribute && (valueLength === 0 || excess > 1 || isEntityInAttributeInvalidEnd$1(char)) ? 0 : this.emitNotTerminatedNamedEntity();
+	}
+	/**
+	* Parses a named entity.
+	*
+	* Equivalent to the `Named character reference state` in the HTML spec.
+	* @param input The string containing the entity (or a continuation of the entity).
+	* @param offset The current offset.
+	* @returns The number of characters that were consumed, or -1 if the entity is incomplete.
+	*/
+	stateNamedEntity(input, offset) {
+		const { decodeTree } = this;
+		const inputLength = input.length;
+		const isStrict = this.decodeMode === DecodingMode$1.Strict;
+		let { treeIndex } = this;
+		let { excess } = this;
+		let { consumed } = this;
+		let current = decodeTree[treeIndex];
+		while (offset < inputLength) {
+			while ((current & (BinTrieFlags.VALUE_LENGTH | BinTrieFlags.FLAG13)) === 0 && (current & BinTrieFlags.JUMP_TABLE) !== 0) {
+				const char = input.charCodeAt(offset);
+				const jumpOffset = current & BinTrieFlags.JUMP_TABLE;
+				const branchCount = (current & BinTrieFlags.BRANCH_LENGTH) >> 7;
+				if (branchCount === 0) {
+					if (char !== jumpOffset) return this.flushAndEmitLegacyOrReject(consumed, excess, char, 0);
+					treeIndex += 1;
+				} else {
+					const slot = char - jumpOffset;
+					if (slot >>> 0 >= branchCount) return this.flushAndEmitLegacyOrReject(consumed, excess, char, 0);
+					const stored = decodeTree[treeIndex + 1 + slot];
+					if (stored === 0) return this.flushAndEmitLegacyOrReject(consumed, excess, char, 0);
+					treeIndex = treeIndex + branchCount + stored & 65535;
+				}
+				current = decodeTree[treeIndex];
+				offset += 1;
+				excess += 1;
+				if (offset >= inputLength) break;
+			}
+			if (offset >= inputLength) break;
+			if ((current & (BinTrieFlags.VALUE_LENGTH | BinTrieFlags.FLAG13)) === BinTrieFlags.FLAG13) {
+				const runLength = (current & BinTrieFlags.BRANCH_LENGTH) >> 7;
+				let { runConsumed } = this;
+				if (runConsumed === 0) {
+					const char = input.charCodeAt(offset);
+					if (char !== (current & BinTrieFlags.JUMP_TABLE)) return this.flushAndEmitLegacyOrReject(consumed, excess, char, 0);
+					offset += 1;
+					excess += 1;
+					runConsumed = 1;
+				}
+				while (runConsumed < runLength) {
+					if (offset >= inputLength) {
+						this.treeIndex = treeIndex;
+						this.excess = excess;
+						this.consumed = consumed;
+						this.runConsumed = runConsumed;
+						return -1;
+					}
+					const charIndexInPacked = runConsumed - 1;
+					const expectedChar = decodeTree[treeIndex + 1 + (charIndexInPacked >> 1)] >> ((charIndexInPacked & 1) << 3) & 255;
+					const char = input.charCodeAt(offset);
+					if (char !== expectedChar) {
+						this.runConsumed = 0;
+						return this.flushAndEmitLegacyOrReject(consumed, excess, char, 0);
+					}
+					offset += 1;
+					excess += 1;
+					runConsumed += 1;
+				}
+				this.runConsumed = 0;
+				treeIndex += 1 + (runLength >> 1);
+				current = decodeTree[treeIndex];
+				continue;
+			}
+			const valueLength = current >>> 14;
+			const char = input.charCodeAt(offset);
+			if (valueLength !== 0) {
+				if (!isStrict && (current & BinTrieFlags.FLAG13) === 0) {
+					this.result = treeIndex;
+					consumed += excess - 1;
+					excess = 1;
+				}
+				if (char === CharCodes$1.SEMI) return this.emitNamedEntityData(treeIndex, valueLength, consumed + excess);
+				if (valueLength === 1) return this.flushAndEmitLegacyOrReject(consumed, excess, char, valueLength);
+			}
+			const next = determineBranch(decodeTree, current, treeIndex + (valueLength || 1), char);
+			if (next < 0) return this.flushAndEmitLegacyOrReject(consumed, excess, char, valueLength);
+			treeIndex = next;
+			current = decodeTree[treeIndex];
+			offset += 1;
+			excess += 1;
+		}
+		if (!isStrict && current >>> 14 !== 0 && (current & BinTrieFlags.FLAG13) === 0) {
+			this.result = treeIndex;
+			consumed += excess - 1;
+			excess = 1;
+		}
+		this.treeIndex = treeIndex;
+		this.excess = excess;
+		this.consumed = consumed;
+		return -1;
+	}
+	/**
+	* Emit a named entity that was not terminated with a semicolon.
+	* @returns The number of characters consumed.
+	*/
+	emitNotTerminatedNamedEntity() {
+		const { result, decodeTree } = this;
+		const valueLength = decodeTree[result] >>> 14;
+		this.emitNamedEntityData(result, valueLength, this.consumed);
+		this.errors?.missingSemicolonAfterCharacterReference();
+		return this.consumed;
+	}
+	/**
+	* Emit a named entity.
+	* @param result The index of the entity in the decode tree.
+	* @param valueLength Encoded value length (header plus any value words).
+	* @param consumed The number of characters consumed.
+	* @returns The number of characters consumed.
+	*/
+	emitNamedEntityData(result, valueLength, consumed) {
+		const { decodeTree } = this;
+		this.emitCodePoint(valueLength === 1 ? decodeTree[result] & BinTrieFlags.VALUE_MASK : decodeTree[result + 1], consumed);
+		if (valueLength === 3) this.emitCodePoint(decodeTree[result + 2], consumed);
+		return consumed;
+	}
+	/**
+	* Signal to the parser that the end of the input was reached.
+	*
+	* Remaining data will be emitted and relevant errors will be produced.
+	* @returns The number of characters consumed.
+	*/
+	end() {
+		switch (this.state) {
+			case EntityDecoderState.NamedEntity: return this.result !== 0 && (this.decodeMode !== DecodingMode$1.Attribute || this.result === this.treeIndex) ? this.emitNotTerminatedNamedEntity() : 0;
+			case EntityDecoderState.NumericDecimal: return this.emitNumericEntity(0, 2);
+			case EntityDecoderState.NumericHex: return this.emitNumericEntity(0, 3);
+			case EntityDecoderState.NumericStart:
+				this.errors?.absenceOfDigitsInNumericCharacterReference(this.consumed);
+				return 0;
+			default: return 0;
+		}
+	}
+};
+/**
+* Determines the branch of the current node that is taken given the current
+* character. This function is used to traverse the trie.
+*
+* See `BinTrieFlags` for the branch-data layouts handled here.
+* @param decodeTree The trie.
+* @param current The current node's header word.
+* @param nodeIndex Index of the node's first branch-data word (the header
+*   plus any value words have been skipped by the caller).
+* @param char The current character.
+* @returns The index of the next node, or -1 if no branch is taken.
+*/
+function determineBranch(decodeTree, current, nodeIndex, char) {
+	const branchCount = (current & BinTrieFlags.BRANCH_LENGTH) >> 7;
+	const jumpOffset = current & BinTrieFlags.JUMP_TABLE;
+	if (jumpOffset) {
+		if (branchCount === 0) return char === jumpOffset ? nodeIndex : -1;
+		const slot = char - jumpOffset;
+		if (slot >>> 0 >= branchCount) return -1;
+		const stored = decodeTree[nodeIndex + slot];
+		return stored === 0 ? -1 : nodeIndex + branchCount + stored - 1 & 65535;
+	}
+	if (branchCount === 0) return -1;
+	const packedKeySlots = branchCount + 1 >> 1;
+	const branchEnd = nodeIndex + packedKeySlots + branchCount;
+	for (let index = 0; index < branchCount; index++) {
+		const key = decodeTree[nodeIndex + (index >> 1)] >> ((index & 1) << 3) & 255;
+		if (key === char) return branchEnd + decodeTree[nodeIndex + packedKeySlots + index] & 65535;
+		if (key > char) return -1;
+	}
+	return -1;
+}
+// node_modules/htmlparser2/dist/Tokenizer.js
+var CharCodes;
+(function(CharCodes) {
+	CharCodes[CharCodes["Tab"] = 9] = "Tab";
+	CharCodes[CharCodes["NewLine"] = 10] = "NewLine";
+	CharCodes[CharCodes["FormFeed"] = 12] = "FormFeed";
+	CharCodes[CharCodes["CarriageReturn"] = 13] = "CarriageReturn";
+	CharCodes[CharCodes["Space"] = 32] = "Space";
+	CharCodes[CharCodes["ExclamationMark"] = 33] = "ExclamationMark";
+	CharCodes[CharCodes["Number"] = 35] = "Number";
+	CharCodes[CharCodes["Amp"] = 38] = "Amp";
+	CharCodes[CharCodes["SingleQuote"] = 39] = "SingleQuote";
+	CharCodes[CharCodes["DoubleQuote"] = 34] = "DoubleQuote";
+	CharCodes[CharCodes["Dash"] = 45] = "Dash";
+	CharCodes[CharCodes["Slash"] = 47] = "Slash";
+	CharCodes[CharCodes["Zero"] = 48] = "Zero";
+	CharCodes[CharCodes["Nine"] = 57] = "Nine";
+	CharCodes[CharCodes["Semi"] = 59] = "Semi";
+	CharCodes[CharCodes["Lt"] = 60] = "Lt";
+	CharCodes[CharCodes["Eq"] = 61] = "Eq";
+	CharCodes[CharCodes["Gt"] = 62] = "Gt";
+	CharCodes[CharCodes["Questionmark"] = 63] = "Questionmark";
+	CharCodes[CharCodes["UpperA"] = 65] = "UpperA";
+	CharCodes[CharCodes["LowerA"] = 97] = "LowerA";
+	CharCodes[CharCodes["UpperF"] = 70] = "UpperF";
+	CharCodes[CharCodes["LowerF"] = 102] = "LowerF";
+	CharCodes[CharCodes["UpperZ"] = 90] = "UpperZ";
+	CharCodes[CharCodes["LowerZ"] = 122] = "LowerZ";
+	CharCodes[CharCodes["LowerX"] = 120] = "LowerX";
+	CharCodes[CharCodes["OpeningSquareBracket"] = 91] = "OpeningSquareBracket";
+})(CharCodes || (CharCodes = {}));
+/** All the states the tokenizer can be in. */
+var State;
+(function(State) {
+	State[State["Text"] = 1] = "Text";
+	State[State["BeforeTagName"] = 2] = "BeforeTagName";
+	State[State["InTagName"] = 3] = "InTagName";
+	State[State["InSelfClosingTag"] = 4] = "InSelfClosingTag";
+	State[State["BeforeClosingTagName"] = 5] = "BeforeClosingTagName";
+	State[State["InClosingTagName"] = 6] = "InClosingTagName";
+	State[State["AfterClosingTagName"] = 7] = "AfterClosingTagName";
+	State[State["BeforeAttributeName"] = 8] = "BeforeAttributeName";
+	State[State["InAttributeName"] = 9] = "InAttributeName";
+	State[State["AfterAttributeName"] = 10] = "AfterAttributeName";
+	State[State["BeforeAttributeValue"] = 11] = "BeforeAttributeValue";
+	State[State["InAttributeValueDq"] = 12] = "InAttributeValueDq";
+	State[State["InAttributeValueSq"] = 13] = "InAttributeValueSq";
+	State[State["InAttributeValueNq"] = 14] = "InAttributeValueNq";
+	State[State["BeforeDeclaration"] = 15] = "BeforeDeclaration";
+	State[State["InDeclaration"] = 16] = "InDeclaration";
+	State[State["InProcessingInstruction"] = 17] = "InProcessingInstruction";
+	State[State["BeforeComment"] = 18] = "BeforeComment";
+	State[State["CDATASequence"] = 19] = "CDATASequence";
+	State[State["DeclarationSequence"] = 20] = "DeclarationSequence";
+	State[State["InSpecialComment"] = 21] = "InSpecialComment";
+	State[State["InCommentLike"] = 22] = "InCommentLike";
+	State[State["SpecialStartSequence"] = 23] = "SpecialStartSequence";
+	State[State["InSpecialTag"] = 24] = "InSpecialTag";
+	State[State["InPlainText"] = 25] = "InPlainText";
+	State[State["InEntity"] = 26] = "InEntity";
+})(State || (State = {}));
+function isWhitespace(c) {
+	return c === CharCodes.Space || c === CharCodes.NewLine || c === CharCodes.Tab || c === CharCodes.FormFeed || c === CharCodes.CarriageReturn;
+}
+function isEndOfTagSection(c) {
+	return c === CharCodes.Slash || c === CharCodes.Gt || isWhitespace(c);
+}
+function isASCIIAlpha(c) {
+	return c >= CharCodes.LowerA && c <= CharCodes.LowerZ || c >= CharCodes.UpperA && c <= CharCodes.UpperZ;
+}
+/**
+* Quote style used for parsed attributes.
+*/
+var QuoteType;
+(function(QuoteType) {
+	QuoteType[QuoteType["NoValue"] = 0] = "NoValue";
+	QuoteType[QuoteType["Unquoted"] = 1] = "Unquoted";
+	QuoteType[QuoteType["Single"] = 2] = "Single";
+	QuoteType[QuoteType["Double"] = 3] = "Double";
+})(QuoteType || (QuoteType = {}));
+/**
+* Sequences used to match longer strings.
+*
+* We don't have `Script`, `Style`, or `Title` here. Instead, we re-use the *End
+* sequences with an increased offset.
+*/
+var Sequences = {
+	Empty: /* @__PURE__ */ new Uint8Array(0),
+	Cdata: new Uint8Array([
+		67,
+		68,
+		65,
+		84,
+		65,
+		91
+	]),
+	CdataEnd: new Uint8Array([
+		93,
+		93,
+		62
+	]),
+	CommentEnd: new Uint8Array([
+		45,
+		45,
+		33,
+		62
+	]),
+	Doctype: new Uint8Array([
+		100,
+		111,
+		99,
+		116,
+		121,
+		112,
+		101
+	]),
+	IframeEnd: new Uint8Array([
+		60,
+		47,
+		105,
+		102,
+		114,
+		97,
+		109,
+		101
+	]),
+	NoembedEnd: new Uint8Array([
+		60,
+		47,
+		110,
+		111,
+		101,
+		109,
+		98,
+		101,
+		100
+	]),
+	NoframesEnd: new Uint8Array([
+		60,
+		47,
+		110,
+		111,
+		102,
+		114,
+		97,
+		109,
+		101,
+		115
+	]),
+	Plaintext: new Uint8Array([
+		60,
+		47,
+		112,
+		108,
+		97,
+		105,
+		110,
+		116,
+		101,
+		120,
+		116
+	]),
+	ScriptEnd: new Uint8Array([
+		60,
+		47,
+		115,
+		99,
+		114,
+		105,
+		112,
+		116
+	]),
+	StyleEnd: new Uint8Array([
+		60,
+		47,
+		115,
+		116,
+		121,
+		108,
+		101
+	]),
+	TitleEnd: new Uint8Array([
+		60,
+		47,
+		116,
+		105,
+		116,
+		108,
+		101
+	]),
+	TextareaEnd: new Uint8Array([
+		60,
+		47,
+		116,
+		101,
+		120,
+		116,
+		97,
+		114,
+		101,
+		97
+	]),
+	XmpEnd: new Uint8Array([
+		60,
+		47,
+		120,
+		109,
+		112
+	])
+};
+/**
+* Maps the first lowercase character of an HTML tag name to the sequence
+* used for special-tag detection.  All sequences share a common layout
+* where index 2 is the first tag-name character, so matching always
+* continues from offset 3.
+*/
+var specialStartSequences = /* @__PURE__ */ new Map([
+	[Sequences.IframeEnd[2], Sequences.IframeEnd],
+	[Sequences.NoembedEnd[2], Sequences.NoembedEnd],
+	[Sequences.Plaintext[2], Sequences.Plaintext],
+	[Sequences.ScriptEnd[2], Sequences.ScriptEnd],
+	[Sequences.TitleEnd[2], Sequences.TitleEnd],
+	[Sequences.XmpEnd[2], Sequences.XmpEnd]
+]);
+/**
+* Tokenizer implementation used by `Parser`.
+*/
+var Tokenizer = class {
+	cbs;
+	/** The current state the tokenizer is in. */
+	state = State.Text;
+	/** The read buffer. */
+	buffer = "";
+	/** The beginning of the section that is currently being read. */
+	sectionStart = 0;
+	/** The index within the buffer that we are currently looking at. */
+	index = 0;
+	/** The start of the last entity. */
+	entityStart = 0;
+	/** Some behavior, eg. when decoding entities, is done while we are in another state. This keeps track of the other state type. */
+	baseState = State.Text;
+	/** For special parsing behavior inside of script and style tags. */
+	isSpecial = false;
+	/** Indicates whether the tokenizer has been paused. */
+	running = true;
+	/** The offset of the current buffer. */
+	offset = 0;
+	xmlMode;
+	decodeEntities;
+	recognizeSelfClosing;
+	entityDecoder;
+	constructor({ xmlMode = false, decodeEntities = true, recognizeSelfClosing = xmlMode }, cbs) {
+		this.cbs = cbs;
+		this.xmlMode = xmlMode;
+		this.decodeEntities = decodeEntities;
+		this.recognizeSelfClosing = recognizeSelfClosing;
+		this.entityDecoder = new EntityDecoder(xmlMode ? xmlDecodeTree : htmlDecodeTree, (cp, consumed) => this.emitCodePoint(cp, consumed));
+	}
+	reset() {
+		this.state = State.Text;
+		this.buffer = "";
+		this.sectionStart = 0;
+		this.index = 0;
+		this.baseState = State.Text;
+		this.isSpecial = false;
+		this.currentSequence = Sequences.Empty;
+		this.sequenceIndex = 0;
+		this.running = true;
+		this.offset = 0;
+	}
+	write(chunk) {
+		this.offset += this.buffer.length;
+		this.buffer = chunk;
+		this.parse();
+	}
+	end() {
+		if (this.running) this.finish();
+	}
+	pause() {
+		this.running = false;
+	}
+	resume() {
+		this.running = true;
+		if (this.index < this.buffer.length + this.offset) this.parse();
+	}
+	stateText(c) {
+		if (c === CharCodes.Lt || !this.decodeEntities && this.fastForwardTo(CharCodes.Lt)) {
+			if (this.index > this.sectionStart) this.cbs.ontext(this.sectionStart, this.index);
+			this.state = State.BeforeTagName;
+			this.sectionStart = this.index;
+		} else if (this.decodeEntities && c === CharCodes.Amp) this.startEntity();
+	}
+	currentSequence = Sequences.Empty;
+	sequenceIndex = 0;
+	enterTagBody() {
+		if (this.currentSequence === Sequences.Plaintext) {
+			this.currentSequence = Sequences.Empty;
+			this.state = State.InPlainText;
+		} else if (this.isSpecial) {
+			this.state = State.InSpecialTag;
+			this.sequenceIndex = 0;
+		} else this.state = State.Text;
+	}
+	/**
+	* Match the opening tag name against an HTML text-only tag sequence.
+	*
+	* Some tags share an initial prefix (`script`/`style`, `title`/`textarea`,
+	* `noembed`/`noframes`), so we may switch to an alternate sequence at the
+	* first distinguishing byte.  On a successful full match we fall back to
+	* the normal tag-name state; a later `>` will enter raw-text, RCDATA, or
+	* plaintext mode based on `currentSequence` / `isSpecial`.
+	* @param c Current character code point.
+	*/
+	stateSpecialStartSequence(c) {
+		const lower = c | 32;
+		if (this.sequenceIndex < this.currentSequence.length) {
+			if (lower === this.currentSequence[this.sequenceIndex]) {
+				this.sequenceIndex++;
+				return;
+			}
+			if (this.sequenceIndex === 3) {
+				if (this.currentSequence === Sequences.ScriptEnd && lower === Sequences.StyleEnd[3]) {
+					this.currentSequence = Sequences.StyleEnd;
+					this.sequenceIndex = 4;
+					return;
+				}
+				if (this.currentSequence === Sequences.TitleEnd && lower === Sequences.TextareaEnd[3]) {
+					this.currentSequence = Sequences.TextareaEnd;
+					this.sequenceIndex = 4;
+					return;
+				}
+			} else if (this.sequenceIndex === 4 && this.currentSequence === Sequences.NoembedEnd && lower === Sequences.NoframesEnd[4]) {
+				this.currentSequence = Sequences.NoframesEnd;
+				this.sequenceIndex = 5;
+				return;
+			}
+		} else if (isEndOfTagSection(c)) {
+			this.sequenceIndex = 0;
+			this.state = State.InTagName;
+			this.stateInTagName(c);
+			return;
+		}
+		this.isSpecial = false;
+		this.currentSequence = Sequences.Empty;
+		this.sequenceIndex = 0;
+		this.state = State.InTagName;
+		this.stateInTagName(c);
+	}
+	stateCDATASequence(c) {
+		if (c === Sequences.Cdata[this.sequenceIndex]) {
+			if (++this.sequenceIndex === Sequences.Cdata.length) {
+				this.state = State.InCommentLike;
+				this.currentSequence = Sequences.CdataEnd;
+				this.sequenceIndex = 0;
+				this.sectionStart = this.index + 1;
+			}
+		} else {
+			this.sequenceIndex = 0;
+			if (this.xmlMode) {
+				this.state = State.InDeclaration;
+				this.stateInDeclaration(c);
+			} else {
+				this.state = State.InSpecialComment;
+				this.stateInSpecialComment(c);
+			}
+		}
+	}
+	/**
+	* When we wait for one specific character, we can speed things up
+	* by skipping through the buffer until we find it.
+	* @param c Current character code point.
+	* @returns Whether the character was found.
+	*/
+	fastForwardTo(c) {
+		while (++this.index < this.buffer.length + this.offset) if (this.buffer.charCodeAt(this.index - this.offset) === c) return true;
+		this.index = this.buffer.length + this.offset - 1;
+		return false;
+	}
+	/**
+	* Emit a comment token and return to the text state.
+	* @param offset Number of characters in the end sequence that have already been matched.
+	*/
+	emitComment(offset) {
+		this.cbs.oncomment(this.sectionStart, this.index, offset);
+		this.sequenceIndex = 0;
+		this.sectionStart = this.index + 1;
+		this.state = State.Text;
+	}
+	/**
+	* Comments and CDATA end with `-->` and `]]>`.
+	*
+	* Their common qualities are:
+	* - Their end sequences have a distinct character they start with.
+	* - That character is then repeated, so we have to check multiple repeats.
+	* - All characters but the start character of the sequence can be skipped.
+	* @param c Current character code point.
+	*/
+	stateInCommentLike(c) {
+		if (!this.xmlMode && this.currentSequence === Sequences.CommentEnd && this.sequenceIndex <= 1 && this.index === this.sectionStart + this.sequenceIndex && c === CharCodes.Gt) this.emitComment(this.sequenceIndex);
+		else if (this.currentSequence === Sequences.CommentEnd && this.sequenceIndex === 2 && c === CharCodes.Gt) this.emitComment(2);
+		else if (this.currentSequence === Sequences.CommentEnd && this.sequenceIndex === this.currentSequence.length - 1 && c !== CharCodes.Gt) this.sequenceIndex = Number(c === CharCodes.Dash);
+		else if (c === this.currentSequence[this.sequenceIndex]) {
+			if (++this.sequenceIndex === this.currentSequence.length) {
+				if (this.currentSequence === Sequences.CdataEnd) this.cbs.oncdata(this.sectionStart, this.index, 2);
+				else this.cbs.oncomment(this.sectionStart, this.index, 3);
+				this.sequenceIndex = 0;
+				this.sectionStart = this.index + 1;
+				this.state = State.Text;
+			}
+		} else if (this.sequenceIndex === 0) {
+			if (this.fastForwardTo(this.currentSequence[0])) this.sequenceIndex = 1;
+		} else if (c !== this.currentSequence[this.sequenceIndex - 1]) this.sequenceIndex = 0;
+	}
+	/**
+	* HTML only allows ASCII alpha characters (a-z and A-Z) at the beginning of a tag name.
+	*
+	* XML allows a lot more characters here (@see https://www.w3.org/TR/REC-xml/#NT-NameStartChar).
+	* We allow anything that wouldn't end the tag.
+	* @param c Current character code point.
+	*/
+	isTagStartChar(c) {
+		return this.xmlMode ? !isEndOfTagSection(c) : isASCIIAlpha(c);
+	}
+	/**
+	* Scan raw-text / RCDATA content for the matching end tag.
+	*
+	* For RCDATA tags (`<title>`, `<textarea>`) entities are decoded inline.
+	* For raw-text tags (`<script>`, `<style>`, etc.) we fast-forward to `<`.
+	* @param c Current character code point.
+	*/
+	stateInSpecialTag(c) {
+		if (this.sequenceIndex === this.currentSequence.length) {
+			if (isEndOfTagSection(c)) {
+				const endOfText = this.index - this.currentSequence.length;
+				if (this.sectionStart < endOfText) {
+					const actualIndex = this.index;
+					this.index = endOfText;
+					this.cbs.ontext(this.sectionStart, endOfText);
+					this.index = actualIndex;
+				}
+				this.isSpecial = false;
+				this.sectionStart = endOfText + 2;
+				this.stateInClosingTagName(c);
+				return;
+			}
+			this.sequenceIndex = 0;
+		}
+		if ((c | 32) === this.currentSequence[this.sequenceIndex]) this.sequenceIndex += 1;
+		else if (this.sequenceIndex === 0) {
+			if (this.currentSequence === Sequences.TitleEnd || this.currentSequence === Sequences.TextareaEnd) {
+				if (this.decodeEntities && c === CharCodes.Amp) this.startEntity();
+			} else if (this.fastForwardTo(CharCodes.Lt)) this.sequenceIndex = 1;
+		} else this.sequenceIndex = Number(c === CharCodes.Lt);
+	}
+	stateBeforeTagName(c) {
+		if (c === CharCodes.ExclamationMark) {
+			this.state = State.BeforeDeclaration;
+			this.sectionStart = this.index + 1;
+		} else if (c === CharCodes.Questionmark) {
+			if (this.xmlMode) {
+				this.state = State.InProcessingInstruction;
+				this.sequenceIndex = 0;
+				this.sectionStart = this.index + 1;
+			} else {
+				this.state = State.InSpecialComment;
+				this.sectionStart = this.index;
+			}
+		} else if (this.isTagStartChar(c)) {
+			this.sectionStart = this.index;
+			const special = this.xmlMode || this.cbs.isInForeignContext?.() ? void 0 : specialStartSequences.get(c | 32);
+			if (special === void 0) this.state = State.InTagName;
+			else {
+				this.isSpecial = true;
+				this.currentSequence = special;
+				this.sequenceIndex = 3;
+				this.state = State.SpecialStartSequence;
+			}
+		} else if (c === CharCodes.Slash) this.state = State.BeforeClosingTagName;
+		else {
+			this.state = State.Text;
+			this.stateText(c);
+		}
+	}
+	stateInTagName(c) {
+		if (isEndOfTagSection(c)) {
+			this.cbs.onopentagname(this.sectionStart, this.index);
+			this.sectionStart = -1;
+			this.state = State.BeforeAttributeName;
+			this.stateBeforeAttributeName(c);
+		}
+	}
+	stateBeforeClosingTagName(c) {
+		if (isWhitespace(c)) {
+			if (this.xmlMode) {} else {
+				this.state = State.InSpecialComment;
+				this.sectionStart = this.index;
+			}
+		} else if (c === CharCodes.Gt) {
+			this.state = State.Text;
+			if (!this.xmlMode) this.sectionStart = this.index + 1;
+		} else {
+			this.state = this.isTagStartChar(c) ? State.InClosingTagName : State.InSpecialComment;
+			this.sectionStart = this.index;
+		}
+	}
+	stateInClosingTagName(c) {
+		if (isEndOfTagSection(c)) {
+			this.cbs.onclosetag(this.sectionStart, this.index);
+			this.sectionStart = -1;
+			this.state = State.AfterClosingTagName;
+			this.stateAfterClosingTagName(c);
+		}
+	}
+	stateAfterClosingTagName(c) {
+		if (c === CharCodes.Gt || this.fastForwardTo(CharCodes.Gt)) {
+			this.state = State.Text;
+			this.sectionStart = this.index + 1;
+		}
+	}
+	stateBeforeAttributeName(c) {
+		if (c === CharCodes.Gt) {
+			this.cbs.onopentagend(this.index);
+			this.enterTagBody();
+			this.sectionStart = this.index + 1;
+		} else if (c === CharCodes.Slash) this.state = State.InSelfClosingTag;
+		else if (!isWhitespace(c)) {
+			this.state = State.InAttributeName;
+			this.sectionStart = this.index;
+		}
+	}
+	/**
+	* Handle `/` before `>` in an opening tag.
+	*
+	* In HTML mode, text-only tags ignore the self-closing flag and still enter
+	* their raw-text/RCDATA/plaintext state unless self-closing tags are being
+	* recognized. In XML mode, or for ordinary tags, the tokenizer returns to
+	* regular text parsing after emitting the self-closing callback.
+	* @param c Current character code point.
+	*/
+	stateInSelfClosingTag(c) {
+		if (c === CharCodes.Gt) {
+			this.cbs.onselfclosingtag(this.index);
+			this.sectionStart = this.index + 1;
+			if (!this.recognizeSelfClosing) {
+				this.enterTagBody();
+				return;
+			}
+			this.state = State.Text;
+			this.isSpecial = false;
+			this.currentSequence = Sequences.Empty;
+		} else if (!isWhitespace(c)) {
+			this.state = State.BeforeAttributeName;
+			this.stateBeforeAttributeName(c);
+		}
+	}
+	stateInAttributeName(c) {
+		if (c === CharCodes.Eq || isEndOfTagSection(c)) {
+			this.cbs.onattribname(this.sectionStart, this.index);
+			this.sectionStart = this.index;
+			this.state = State.AfterAttributeName;
+			this.stateAfterAttributeName(c);
+		}
+	}
+	stateAfterAttributeName(c) {
+		if (c === CharCodes.Eq) this.state = State.BeforeAttributeValue;
+		else if (c === CharCodes.Slash || c === CharCodes.Gt) {
+			this.cbs.onattribend(QuoteType.NoValue, this.sectionStart);
+			this.sectionStart = -1;
+			this.state = State.BeforeAttributeName;
+			this.stateBeforeAttributeName(c);
+		} else if (!isWhitespace(c)) {
+			this.cbs.onattribend(QuoteType.NoValue, this.sectionStart);
+			this.state = State.InAttributeName;
+			this.sectionStart = this.index;
+		}
+	}
+	stateBeforeAttributeValue(c) {
+		if (c === CharCodes.DoubleQuote) {
+			this.state = State.InAttributeValueDq;
+			this.sectionStart = this.index + 1;
+		} else if (c === CharCodes.SingleQuote) {
+			this.state = State.InAttributeValueSq;
+			this.sectionStart = this.index + 1;
+		} else if (!isWhitespace(c)) {
+			this.sectionStart = this.index;
+			this.state = State.InAttributeValueNq;
+			this.stateInAttributeValueNoQuotes(c);
+		}
+	}
+	handleInAttributeValue(c, quote) {
+		if (c === quote || !this.decodeEntities && this.fastForwardTo(quote)) {
+			this.cbs.onattribdata(this.sectionStart, this.index);
+			this.sectionStart = -1;
+			this.cbs.onattribend(quote === CharCodes.DoubleQuote ? QuoteType.Double : QuoteType.Single, this.index + 1);
+			this.state = State.BeforeAttributeName;
+		} else if (this.decodeEntities && c === CharCodes.Amp) this.startEntity();
+	}
+	stateInAttributeValueDoubleQuotes(c) {
+		this.handleInAttributeValue(c, CharCodes.DoubleQuote);
+	}
+	stateInAttributeValueSingleQuotes(c) {
+		this.handleInAttributeValue(c, CharCodes.SingleQuote);
+	}
+	stateInAttributeValueNoQuotes(c) {
+		if (isWhitespace(c) || c === CharCodes.Gt) {
+			this.cbs.onattribdata(this.sectionStart, this.index);
+			this.sectionStart = -1;
+			this.cbs.onattribend(QuoteType.Unquoted, this.index);
+			this.state = State.BeforeAttributeName;
+			this.stateBeforeAttributeName(c);
+		} else if (this.decodeEntities && c === CharCodes.Amp) this.startEntity();
+	}
+	/**
+	* Distinguish between CDATA, declarations, HTML comments, and HTML bogus
+	* comments after `<!`.
+	*
+	* In HTML mode, only real comments and doctypes stay on declaration paths;
+	* everything else becomes a bogus comment terminated by the next `>`.
+	* @param c Current character code point.
+	*/
+	stateBeforeDeclaration(c) {
+		if (c === CharCodes.OpeningSquareBracket) {
+			this.state = State.CDATASequence;
+			this.sequenceIndex = 0;
+		} else if (this.xmlMode) this.state = c === CharCodes.Dash ? State.BeforeComment : State.InDeclaration;
+		else if ((c | 32) === Sequences.Doctype[0]) {
+			this.state = State.DeclarationSequence;
+			this.currentSequence = Sequences.Doctype;
+			this.sequenceIndex = 1;
+		} else if (c === CharCodes.Gt) {
+			this.cbs.oncomment(this.sectionStart, this.index, 0);
+			this.state = State.Text;
+			this.sectionStart = this.index + 1;
+		} else if (c === CharCodes.Dash) this.state = State.BeforeComment;
+		else this.state = State.InSpecialComment;
+	}
+	/**
+	* Continue matching `doctype` after `<!d`.
+	*
+	* A full `doctype` match stays on the declaration path; any other name falls
+	* back to an HTML bogus comment, which matches browser behavior for
+	* non-doctype `<!...>` constructs.
+	* @param c Current character code point.
+	*/
+	stateDeclarationSequence(c) {
+		if (this.sequenceIndex === this.currentSequence.length) {
+			this.state = State.InDeclaration;
+			this.stateInDeclaration(c);
+		} else if ((c | 32) === this.currentSequence[this.sequenceIndex]) this.sequenceIndex += 1;
+		else if (c === CharCodes.Gt) {
+			this.cbs.oncomment(this.sectionStart, this.index, 0);
+			this.state = State.Text;
+			this.sectionStart = this.index + 1;
+		} else this.state = State.InSpecialComment;
+	}
+	stateInDeclaration(c) {
+		if (c === CharCodes.Gt || this.fastForwardTo(CharCodes.Gt)) {
+			this.cbs.ondeclaration(this.sectionStart, this.index);
+			this.state = State.Text;
+			this.sectionStart = this.index + 1;
+		}
+	}
+	/**
+	* XML processing instructions (`<?...?>`).
+	*
+	* In HTML mode `<?` is routed to `InSpecialComment` instead, so this
+	* state is only reachable in XML mode.
+	* @param c Current character code point.
+	*/
+	stateInProcessingInstruction(c) {
+		if (c === CharCodes.Questionmark) this.sequenceIndex = 1;
+		else if (c === CharCodes.Gt && this.sequenceIndex === 1) {
+			this.cbs.onprocessinginstruction(this.sectionStart, this.index - 1);
+			this.sequenceIndex = 0;
+			this.state = State.Text;
+			this.sectionStart = this.index + 1;
+		} else this.sequenceIndex = Number(this.fastForwardTo(CharCodes.Questionmark));
+	}
+	stateBeforeComment(c) {
+		if (c === CharCodes.Dash) {
+			this.state = State.InCommentLike;
+			this.currentSequence = Sequences.CommentEnd;
+			this.sequenceIndex = 0;
+			this.sectionStart = this.index + 1;
+		} else if (this.xmlMode) this.state = State.InDeclaration;
+		else if (c === CharCodes.Gt) {
+			this.cbs.oncomment(this.sectionStart, this.index, 0);
+			this.state = State.Text;
+			this.sectionStart = this.index + 1;
+		} else this.state = State.InSpecialComment;
+	}
+	stateInSpecialComment(c) {
+		if (c === CharCodes.Gt || this.fastForwardTo(CharCodes.Gt)) {
+			this.cbs.oncomment(this.sectionStart, this.index, 0);
+			this.state = State.Text;
+			this.sectionStart = this.index + 1;
+		}
+	}
+	startEntity() {
+		this.baseState = this.state;
+		this.state = State.InEntity;
+		this.entityStart = this.index;
+		this.entityDecoder.startEntity(this.xmlMode ? DecodingMode$1.Strict : this.baseState === State.Text || this.baseState === State.InSpecialTag ? DecodingMode$1.Legacy : DecodingMode$1.Attribute);
+	}
+	stateInEntity() {
+		const indexInBuffer = this.index - this.offset;
+		const length = this.entityDecoder.write(this.buffer, indexInBuffer);
+		if (length >= 0) {
+			this.state = this.baseState;
+			if (length === 0) this.index -= 1;
+		} else {
+			if (indexInBuffer < this.buffer.length && this.buffer.charCodeAt(indexInBuffer) === CharCodes.Amp) {
+				this.state = this.baseState;
+				this.index -= 1;
+				return;
+			}
+			this.index = this.offset + this.buffer.length - 1;
+		}
+	}
+	/**
+	* Remove data that has already been consumed from the buffer.
+	*/
+	cleanup() {
+		if (this.running && this.sectionStart !== this.index) {
+			if (this.state === State.Text || this.state === State.InPlainText || this.state === State.InSpecialTag && this.sequenceIndex === 0) {
+				this.cbs.ontext(this.sectionStart, this.index);
+				this.sectionStart = this.index;
+			} else if (this.state === State.InAttributeValueDq || this.state === State.InAttributeValueSq || this.state === State.InAttributeValueNq) {
+				this.cbs.onattribdata(this.sectionStart, this.index);
+				this.sectionStart = this.index;
+			}
+		}
+	}
+	shouldContinue() {
+		return this.index < this.buffer.length + this.offset && this.running;
+	}
+	/**
+	* Iterates through the buffer, calling the function corresponding to the current state.
+	*
+	* States that are more likely to be hit are higher up, as a performance improvement.
+	*/
+	parse() {
+		while (this.shouldContinue()) {
+			const c = this.buffer.charCodeAt(this.index - this.offset);
+			switch (this.state) {
+				case State.Text:
+					this.stateText(c);
+					break;
+				case State.InPlainText:
+					this.index = this.buffer.length + this.offset - 1;
+					break;
+				case State.SpecialStartSequence:
+					this.stateSpecialStartSequence(c);
+					break;
+				case State.InSpecialTag:
+					this.stateInSpecialTag(c);
+					break;
+				case State.CDATASequence:
+					this.stateCDATASequence(c);
+					break;
+				case State.DeclarationSequence:
+					this.stateDeclarationSequence(c);
+					break;
+				case State.InAttributeValueDq:
+					this.stateInAttributeValueDoubleQuotes(c);
+					break;
+				case State.InAttributeName:
+					this.stateInAttributeName(c);
+					break;
+				case State.InCommentLike:
+					this.stateInCommentLike(c);
+					break;
+				case State.InSpecialComment:
+					this.stateInSpecialComment(c);
+					break;
+				case State.BeforeAttributeName:
+					this.stateBeforeAttributeName(c);
+					break;
+				case State.InTagName:
+					this.stateInTagName(c);
+					break;
+				case State.InClosingTagName:
+					this.stateInClosingTagName(c);
+					break;
+				case State.BeforeTagName:
+					this.stateBeforeTagName(c);
+					break;
+				case State.AfterAttributeName:
+					this.stateAfterAttributeName(c);
+					break;
+				case State.InAttributeValueSq:
+					this.stateInAttributeValueSingleQuotes(c);
+					break;
+				case State.BeforeAttributeValue:
+					this.stateBeforeAttributeValue(c);
+					break;
+				case State.BeforeClosingTagName:
+					this.stateBeforeClosingTagName(c);
+					break;
+				case State.AfterClosingTagName:
+					this.stateAfterClosingTagName(c);
+					break;
+				case State.InAttributeValueNq:
+					this.stateInAttributeValueNoQuotes(c);
+					break;
+				case State.InSelfClosingTag:
+					this.stateInSelfClosingTag(c);
+					break;
+				case State.InDeclaration:
+					this.stateInDeclaration(c);
+					break;
+				case State.BeforeDeclaration:
+					this.stateBeforeDeclaration(c);
+					break;
+				case State.BeforeComment:
+					this.stateBeforeComment(c);
+					break;
+				case State.InProcessingInstruction:
+					this.stateInProcessingInstruction(c);
+					break;
+				case State.InEntity: this.stateInEntity();
+			}
+			this.index++;
+		}
+		this.cleanup();
+	}
+	finish() {
+		if (this.state === State.InEntity) {
+			this.entityDecoder.end();
+			this.state = this.baseState;
+		}
+		this.handleTrailingData();
+		this.cbs.onend();
+	}
+	handleTrailingCommentLikeData(endIndex) {
+		if (this.state !== State.InCommentLike) return false;
+		if (this.currentSequence === Sequences.CdataEnd) {
+			if (this.xmlMode) {
+				if (this.sectionStart < endIndex) this.cbs.oncdata(this.sectionStart, endIndex, 0);
+			} else {
+				const cdataStart = this.sectionStart - Sequences.Cdata.length - 1;
+				this.cbs.oncomment(cdataStart, endIndex, 0);
+			}
+		} else {
+			const offset = this.xmlMode ? 0 : Math.min(this.sequenceIndex, Sequences.CommentEnd.length - 1);
+			this.cbs.oncomment(this.sectionStart, endIndex, offset);
+		}
+		return true;
+	}
+	handleTrailingMarkupDeclaration(endIndex) {
+		if (this.xmlMode) switch (this.state) {
+			case State.InSpecialComment:
+			case State.BeforeComment:
+			case State.CDATASequence:
+			case State.DeclarationSequence:
+			case State.InDeclaration:
+				this.cbs.ontext(this.sectionStart, endIndex);
+				return true;
+			default: return false;
+		}
+		switch (this.state) {
+			case State.BeforeDeclaration:
+			case State.InSpecialComment:
+			case State.BeforeComment:
+			case State.CDATASequence:
+				this.cbs.oncomment(this.sectionStart, endIndex, 0);
+				return true;
+			case State.DeclarationSequence:
+				if (this.sequenceIndex !== Sequences.Doctype.length) this.cbs.oncomment(this.sectionStart, endIndex, 0);
+				return true;
+			case State.InDeclaration: return true;
+			default: return false;
+		}
+	}
+	/** Handle any trailing data. */
+	handleTrailingData() {
+		const endIndex = this.buffer.length + this.offset;
+		if (this.handleTrailingCommentLikeData(endIndex) || this.handleTrailingMarkupDeclaration(endIndex)) return;
+		if (this.sectionStart >= endIndex) return;
+		switch (this.state) {
+			case State.InTagName:
+			case State.BeforeAttributeName:
+			case State.BeforeAttributeValue:
+			case State.AfterAttributeName:
+			case State.InAttributeName:
+			case State.InAttributeValueSq:
+			case State.InAttributeValueDq:
+			case State.InAttributeValueNq:
+			case State.InClosingTagName: break;
+			default: this.cbs.ontext(this.sectionStart, endIndex);
+		}
+	}
+	emitCodePoint(cp, consumed) {
+		if (this.baseState !== State.Text && this.baseState !== State.InSpecialTag) {
+			if (this.sectionStart < this.entityStart) this.cbs.onattribdata(this.sectionStart, this.entityStart);
+			this.sectionStart = this.entityStart + consumed;
+			this.index = this.sectionStart - 1;
+			this.cbs.onattribentity(cp);
+		} else {
+			if (this.sectionStart < this.entityStart) this.cbs.ontext(this.sectionStart, this.entityStart);
+			this.sectionStart = this.entityStart + consumed;
+			this.index = this.sectionStart - 1;
+			this.cbs.ontextentity(cp, this.sectionStart);
+		}
+	}
+};
+// node_modules/htmlparser2/dist/Parser.js
+var { fromCodePoint } = String;
+var formTags = /* @__PURE__ */ new Set([
+	"input",
+	"option",
+	"optgroup",
+	"select",
+	"button",
+	"datalist",
+	"textarea"
+]);
+var pTag = /* @__PURE__ */ new Set(["p"]);
+var headingTags = /* @__PURE__ */ new Set([
+	"h1",
+	"h2",
+	"h3",
+	"h4",
+	"h5",
+	"h6",
+	"p"
+]);
+var tableSectionTags = /* @__PURE__ */ new Set(["thead", "tbody"]);
+var ddtTags = /* @__PURE__ */ new Set(["dd", "dt"]);
+var rtpTags = /* @__PURE__ */ new Set(["rt", "rp"]);
+var openImpliesClose = /* @__PURE__ */ new Map([
+	["tr", /* @__PURE__ */ new Set([
+		"tr",
+		"th",
+		"td"
+	])],
+	["th", /* @__PURE__ */ new Set(["th"])],
+	["td", /* @__PURE__ */ new Set([
+		"thead",
+		"th",
+		"td"
+	])],
+	["body", /* @__PURE__ */ new Set([
+		"head",
+		"link",
+		"script"
+	])],
+	["a", /* @__PURE__ */ new Set(["a"])],
+	["li", /* @__PURE__ */ new Set(["li"])],
+	["p", pTag],
+	["h1", headingTags],
+	["h2", headingTags],
+	["h3", headingTags],
+	["h4", headingTags],
+	["h5", headingTags],
+	["h6", headingTags],
+	["select", formTags],
+	["input", formTags],
+	["output", formTags],
+	["button", formTags],
+	["datalist", formTags],
+	["textarea", formTags],
+	["option", /* @__PURE__ */ new Set(["option"])],
+	["optgroup", /* @__PURE__ */ new Set(["optgroup", "option"])],
+	["dd", ddtTags],
+	["dt", ddtTags],
+	["address", pTag],
+	["article", pTag],
+	["aside", pTag],
+	["blockquote", pTag],
+	["details", pTag],
+	["div", pTag],
+	["dl", pTag],
+	["fieldset", pTag],
+	["figcaption", pTag],
+	["figure", pTag],
+	["footer", pTag],
+	["form", pTag],
+	["header", pTag],
+	["hr", pTag],
+	["main", pTag],
+	["nav", pTag],
+	["ol", pTag],
+	["pre", pTag],
+	["section", pTag],
+	["table", pTag],
+	["ul", pTag],
+	["rt", rtpTags],
+	["rp", rtpTags],
+	["tbody", tableSectionTags],
+	["tfoot", tableSectionTags]
+]);
+var DOCUMENT_TYPE = "doctype";
+var voidElements = /* @__PURE__ */ new Set([
+	"area",
+	"base",
+	"basefont",
+	"br",
+	"col",
+	"command",
+	"embed",
+	"frame",
+	"hr",
+	"img",
+	"input",
+	"isindex",
+	"keygen",
+	"link",
+	"meta",
+	"param",
+	"source",
+	"track",
+	"wbr"
+]);
+var foreignContextElements = /* @__PURE__ */ new Set(["math", "svg"]);
+/**
+* Elements that can be used to integrate HTML content within foreign namespaces (e.g., SVG or MathML).
+*
+* Entries must use the SVG-adjusted casing (e.g. "foreignObject" not
+* "foreignobject") since they are compared against adjusted tag names.
+*/
+var htmlIntegrationElements = /* @__PURE__ */ new Set([
+	"mi",
+	"mo",
+	"mn",
+	"ms",
+	"mtext",
+	"annotation-xml",
+	"foreignObject",
+	"desc",
+	"title"
+]);
+var svgTagNameAdjustments = /* @__PURE__ */ new Map([
+	["altglyph", "altGlyph"],
+	["altglyphdef", "altGlyphDef"],
+	["altglyphitem", "altGlyphItem"],
+	["animatecolor", "animateColor"],
+	["animatemotion", "animateMotion"],
+	["animatetransform", "animateTransform"],
+	["clippath", "clipPath"],
+	["feblend", "feBlend"],
+	["fecolormatrix", "feColorMatrix"],
+	["fecomponenttransfer", "feComponentTransfer"],
+	["fecomposite", "feComposite"],
+	["feconvolvematrix", "feConvolveMatrix"],
+	["fediffuselighting", "feDiffuseLighting"],
+	["fedisplacementmap", "feDisplacementMap"],
+	["fedistantlight", "feDistantLight"],
+	["fedropshadow", "feDropShadow"],
+	["feflood", "feFlood"],
+	["fefunca", "feFuncA"],
+	["fefuncb", "feFuncB"],
+	["fefuncg", "feFuncG"],
+	["fefuncr", "feFuncR"],
+	["fegaussianblur", "feGaussianBlur"],
+	["feimage", "feImage"],
+	["femerge", "feMerge"],
+	["femergenode", "feMergeNode"],
+	["femorphology", "feMorphology"],
+	["feoffset", "feOffset"],
+	["fepointlight", "fePointLight"],
+	["fespecularlighting", "feSpecularLighting"],
+	["fespotlight", "feSpotLight"],
+	["fetile", "feTile"],
+	["feturbulence", "feTurbulence"],
+	["foreignobject", "foreignObject"],
+	["glyphref", "glyphRef"],
+	["lineargradient", "linearGradient"],
+	["radialgradient", "radialGradient"],
+	["textpath", "textPath"]
+]);
+var ForeignContext;
+(function(ForeignContext) {
+	ForeignContext[ForeignContext["None"] = 0] = "None";
+	ForeignContext[ForeignContext["Svg"] = 1] = "Svg";
+	ForeignContext[ForeignContext["MathML"] = 2] = "MathML";
+})(ForeignContext || (ForeignContext = {}));
+var reNameEnd = /\s|\//;
+/**
+* Incremental parser implementation.
+*/
+var Parser = class {
+	options;
+	/** The start index of the last event. */
+	startIndex = 0;
+	/** The end index of the last event. */
+	endIndex = 0;
+	/**
+	* Store the start index of the current open tag,
+	* so we can update the start index for attributes.
+	*/
+	openTagStart = 0;
+	tagname = "";
+	attribname = "";
+	attribvalue = "";
+	attribs = null;
+	stack = [];
+	foreignContext;
+	cbs;
+	lowerCaseTagNames;
+	lowerCaseAttributeNames;
+	recognizeSelfClosing;
+	/** We are parsing HTML. Inverse of the `xmlMode` option. */
+	htmlMode;
+	tokenizer;
+	buffers = [];
+	bufferOffset = 0;
+	/** The index of the last written buffer. Used when resuming after a `pause()`. */
+	writeIndex = 0;
+	/** Indicates whether the parser has finished running / `.end` has been called. */
+	ended = false;
+	constructor(cbs, options = {}) {
+		this.options = options;
+		this.cbs = cbs ?? {};
+		this.htmlMode = !this.options.xmlMode;
+		this.lowerCaseTagNames = options.lowerCaseTags ?? this.htmlMode;
+		this.lowerCaseAttributeNames = options.lowerCaseAttributeNames ?? this.htmlMode;
+		this.recognizeSelfClosing = options.recognizeSelfClosing ?? !this.htmlMode;
+		this.tokenizer = new (options.Tokenizer ?? Tokenizer)(this.options, this);
+		this.foreignContext = [ForeignContext.None];
+		this.cbs.onparserinit?.(this);
+	}
+	/**
+	* @param start Start index for the current parser event.
+	* @param endIndex End index for the current parser event.
+	* @internal
+	*/
+	ontext(start, endIndex) {
+		const data = this.getSlice(start, endIndex);
+		this.endIndex = endIndex - 1;
+		this.cbs.ontext?.(data);
+		this.startIndex = endIndex;
+	}
+	/**
+	* @param cp Current Unicode code point.
+	* @param endIndex End index for the current parser event.
+	* @internal
+	*/
+	ontextentity(cp, endIndex) {
+		this.endIndex = endIndex - 1;
+		this.cbs.ontext?.(fromCodePoint(cp));
+		this.startIndex = endIndex;
+	}
+	/** @internal */
+	isInForeignContext() {
+		return this.foreignContext[0] !== ForeignContext.None;
+	}
+	/**
+	* Checks if the current tag is a void element. Override this if you want
+	* to specify your own additional void elements.
+	* @param name Name of the pseudo selector.
+	*/
+	isVoidElement(name) {
+		return this.htmlMode && voidElements.has(name);
+	}
+	/**
+	* Read a tag name from the buffer.
+	*
+	* When `lowerCaseTagNames` is enabled (the default in HTML mode), the name
+	* is lowercased and may be adjusted for SVG casing or the `image` → `img`
+	* alias.
+	* @param start Start index of the tag name in the buffer.
+	* @param endIndex End index of the tag name in the buffer.
+	*/
+	readTagName(start, endIndex) {
+		const name = this.lowerCaseTagNames ? this.getSlice(start, endIndex).toLowerCase() : this.getSlice(start, endIndex);
+		if (!(this.lowerCaseTagNames && this.htmlMode)) return name;
+		if (this.foreignContext[0] === ForeignContext.Svg) return svgTagNameAdjustments.get(name) ?? name;
+		if (this.foreignContext.length > 1) {
+			const adjusted = svgTagNameAdjustments.get(name);
+			if (adjusted !== void 0 && this.stack.includes(adjusted)) return adjusted;
+		}
+		if (!this.isInForeignContext()) return name === "image" ? "img" : name;
+		return name;
+	}
+	/**
+	* @param start Start index for the current parser event.
+	* @param endIndex End index for the current parser event.
+	* @internal
+	*/
+	onopentagname(start, endIndex) {
+		this.endIndex = endIndex;
+		this.emitOpenTag(this.readTagName(start, endIndex));
+	}
+	emitOpenTag(name) {
+		this.openTagStart = this.startIndex;
+		this.tagname = name;
+		if (this.htmlMode && name === "form" && this.stack.includes("form")) {
+			this.tagname = "";
+			return;
+		}
+		const impliesClose = this.htmlMode && openImpliesClose.get(name);
+		if (impliesClose) while (this.stack.length > 0 && impliesClose.has(this.stack[0])) this.popElement(true);
+		if (!this.isVoidElement(name)) {
+			this.stack.unshift(name);
+			if (this.htmlMode) {
+				if (name === "svg") this.foreignContext.unshift(ForeignContext.Svg);
+				else if (name === "math") this.foreignContext.unshift(ForeignContext.MathML);
+				else if (htmlIntegrationElements.has(name)) this.foreignContext.unshift(ForeignContext.None);
+			}
+		}
+		this.cbs.onopentagname?.(name);
+		if (this.cbs.onopentag) this.attribs = {};
+	}
+	endOpenTag(isImplied) {
+		this.startIndex = this.openTagStart;
+		if (this.attribs) {
+			this.cbs.onopentag?.(this.tagname, this.attribs, isImplied);
+			this.attribs = null;
+		}
+		if (this.cbs.onclosetag && this.isVoidElement(this.tagname)) this.cbs.onclosetag(this.tagname, true);
+		this.tagname = "";
+	}
+	/**
+	* @param endIndex End index for the current parser event.
+	* @internal
+	*/
+	onopentagend(endIndex) {
+		this.endIndex = endIndex;
+		this.endOpenTag(false);
+		this.startIndex = endIndex + 1;
+	}
+	/**
+	* @param start Start index for the current parser event.
+	* @param endIndex End index for the current parser event.
+	* @internal
+	*/
+	onclosetag(start, endIndex) {
+		this.endIndex = endIndex;
+		const name = this.readTagName(start, endIndex);
+		if (!this.isVoidElement(name)) {
+			const pos = this.stack.indexOf(name);
+			if (pos !== -1) {
+				for (let index = 0; index < pos; index++) this.popElement(true);
+				this.popElement(false);
+			} else if (this.htmlMode && name === "p") {
+				this.emitOpenTag("p");
+				this.closeCurrentTag(true);
+			}
+		} else if (this.htmlMode && name === "br") {
+			this.cbs.onopentagname?.("br");
+			this.cbs.onopentag?.("br", {}, true);
+			this.cbs.onclosetag?.("br", false);
+		}
+		this.startIndex = endIndex + 1;
+	}
+	/**
+	* @param endIndex End index for the current parser event.
+	* @internal
+	*/
+	onselfclosingtag(endIndex) {
+		this.endIndex = endIndex;
+		if (this.recognizeSelfClosing || this.isInForeignContext()) {
+			this.closeCurrentTag(false);
+			this.startIndex = endIndex + 1;
+		} else this.onopentagend(endIndex);
+	}
+	/**
+	* Pop the top element off the stack, emit a close event, and maintain
+	* the foreign context stack.
+	* @param implied Whether this close is implied (not from an explicit end tag).
+	*/
+	popElement(implied) {
+		const element = this.stack.shift();
+		if (this.htmlMode && (foreignContextElements.has(element) || htmlIntegrationElements.has(element))) this.foreignContext.shift();
+		this.cbs.onclosetag?.(element, implied);
+	}
+	closeCurrentTag(isOpenImplied) {
+		const name = this.tagname;
+		this.endOpenTag(isOpenImplied);
+		if (this.stack[0] === name) this.popElement(!isOpenImplied);
+	}
+	/**
+	* @param start Start index for the current parser event.
+	* @param endIndex End index for the current parser event.
+	* @internal
+	*/
+	onattribname(start, endIndex) {
+		this.startIndex = start;
+		const name = this.getSlice(start, endIndex);
+		this.attribname = this.lowerCaseAttributeNames ? name.toLowerCase() : name;
+	}
+	/**
+	* @param start Start index for the current parser event.
+	* @param endIndex End index for the current parser event.
+	* @internal
+	*/
+	onattribdata(start, endIndex) {
+		this.attribvalue += this.getSlice(start, endIndex);
+	}
+	/**
+	* @param cp Current Unicode code point.
+	* @internal
+	*/
+	onattribentity(cp) {
+		this.attribvalue += fromCodePoint(cp);
+	}
+	/**
+	* @param quote Quote type used for the current attribute.
+	* @param endIndex End index for the current parser event.
+	* @internal
+	*/
+	onattribend(quote, endIndex) {
+		this.endIndex = endIndex;
+		this.cbs.onattribute?.(this.attribname, this.attribvalue, quote === QuoteType.Double ? "\"" : quote === QuoteType.Single ? "'" : quote === QuoteType.NoValue ? void 0 : null);
+		if (this.attribs && !Object.hasOwn(this.attribs, this.attribname)) this.attribs[this.attribname] = this.attribvalue;
+		this.attribvalue = "";
+	}
+	getInstructionName(value) {
+		const index = value.search(reNameEnd);
+		let name = index < 0 ? value : value.substr(0, index);
+		if (this.lowerCaseTagNames) name = name.toLowerCase();
+		return name;
+	}
+	/**
+	* @param start Start index for the current parser event.
+	* @param endIndex End index for the current parser event.
+	* @internal
+	*/
+	ondeclaration(start, endIndex) {
+		this.endIndex = endIndex;
+		const value = this.getSlice(start, endIndex);
+		if (this.cbs.onprocessinginstruction) {
+			const name = this.htmlMode ? this.lowerCaseTagNames ? DOCUMENT_TYPE : value.slice(0, 7) : this.getInstructionName(value);
+			this.cbs.onprocessinginstruction(`!${name}`, `!${value}`);
+		}
+		this.startIndex = endIndex + 1;
+	}
+	/**
+	* @param start Start index for the current parser event.
+	* @param endIndex End index for the current parser event.
+	* @internal
+	*/
+	onprocessinginstruction(start, endIndex) {
+		this.endIndex = endIndex;
+		const value = this.getSlice(start, endIndex);
+		if (this.cbs.onprocessinginstruction) {
+			const name = this.getInstructionName(value);
+			this.cbs.onprocessinginstruction(`?${name}`, `?${value}`);
+		}
+		this.startIndex = endIndex + 1;
+	}
+	/**
+	* @param start Start index for the current parser event.
+	* @param endIndex End index for the current parser event.
+	* @param offset Offset applied when computing parser indices.
+	* @internal
+	*/
+	oncomment(start, endIndex, offset) {
+		this.endIndex = endIndex;
+		this.cbs.oncomment?.(this.getSlice(start, endIndex - offset));
+		this.cbs.oncommentend?.();
+		this.startIndex = endIndex + 1;
+	}
+	/**
+	* @param start Start index for the current parser event.
+	* @param endIndex End index for the current parser event.
+	* @param offset Offset applied when computing parser indices.
+	* @internal
+	*/
+	oncdata(start, endIndex, offset) {
+		this.endIndex = endIndex;
+		const value = this.getSlice(start, endIndex - offset);
+		if (!this.htmlMode || this.options.recognizeCDATA) {
+			this.cbs.oncdatastart?.();
+			this.cbs.ontext?.(value);
+			this.cbs.oncdataend?.();
+		} else if (this.isInForeignContext()) this.cbs.ontext?.(value);
+		else {
+			this.cbs.oncomment?.(`[CDATA[${value}]]`);
+			this.cbs.oncommentend?.();
+		}
+		this.startIndex = endIndex + 1;
+	}
+	/** @internal */
+	onend() {
+		if (this.cbs.onclosetag) {
+			this.endIndex = this.startIndex;
+			for (let index = 0; index < this.stack.length; index++) this.cbs.onclosetag(this.stack[index], true);
+		}
+		this.cbs.onend?.();
+	}
+	/**
+	* Resets the parser to a blank state, ready to parse a new HTML document
+	*/
+	reset() {
+		this.cbs.onreset?.();
+		this.tokenizer.reset();
+		this.tagname = "";
+		this.attribname = "";
+		this.attribvalue = "";
+		this.attribs = null;
+		this.stack.length = 0;
+		this.startIndex = 0;
+		this.endIndex = 0;
+		this.cbs.onparserinit?.(this);
+		this.buffers.length = 0;
+		this.foreignContext.length = 0;
+		this.foreignContext.unshift(ForeignContext.None);
+		this.bufferOffset = 0;
+		this.writeIndex = 0;
+		this.ended = false;
+	}
+	/**
+	* Resets the parser, then parses a complete document and
+	* pushes it to the handler.
+	* @param data Document to parse.
+	*/
+	parseComplete(data) {
+		this.reset();
+		this.end(data);
+	}
+	getSlice(start, end) {
+		if (start === end) return "";
+		while (start - this.bufferOffset >= this.buffers[0].length) this.shiftBuffer();
+		let slice = this.buffers[0].slice(start - this.bufferOffset, end - this.bufferOffset);
+		while (end - this.bufferOffset > this.buffers[0].length) {
+			this.shiftBuffer();
+			slice += this.buffers[0].slice(0, end - this.bufferOffset);
+		}
+		return slice;
+	}
+	shiftBuffer() {
+		this.bufferOffset += this.buffers[0].length;
+		this.writeIndex--;
+		this.buffers.shift();
+	}
+	/**
+	* Parses a chunk of data and calls the corresponding callbacks.
+	* @param chunk Chunk to parse.
+	*/
+	write(chunk) {
+		if (this.ended) {
+			this.cbs.onerror?.(/* @__PURE__ */ new Error(".write() after done!"));
+			return;
+		}
+		this.buffers.push(chunk);
+		if (this.tokenizer.running) {
+			this.tokenizer.write(chunk);
+			this.writeIndex++;
+		}
+	}
+	/**
+	* Parses the end of the buffer and clears the stack, calls onend.
+	* @param chunk Optional final chunk to parse.
+	*/
+	end(chunk) {
+		if (this.ended) {
+			this.cbs.onerror?.(/* @__PURE__ */ new Error(".end() after done!"));
+			return;
+		}
+		if (chunk) this.write(chunk);
+		this.ended = true;
+		this.tokenizer.end();
+	}
+	/**
+	* Pauses parsing. The parser won't emit events until `resume` is called.
+	*/
+	pause() {
+		this.tokenizer.pause();
+	}
+	/**
+	* Resumes parsing after `pause` was called.
+	*/
+	resume() {
+		this.tokenizer.resume();
+		while (this.tokenizer.running && this.writeIndex < this.buffers.length) this.tokenizer.write(this.buffers[this.writeIndex++]);
+		if (this.ended) this.tokenizer.end();
+	}
+};
+// apps/worker/feeds/article-extractor.ts
+var bodyClasses = {
+	gouvernement: ["cmp-text", "article-body"],
+	figaro: ["fig-content-body"],
+	lejsl: ["articleBody"],
+	investing: ["article_WYSIWYG"]
+};
+var MAX_TEXT = 8e4;
+var MIN_TEXT = 400;
+var ignoredTags = /* @__PURE__ */ new Set([
+	"script",
+	"style",
+	"nav",
+	"header",
+	"footer",
+	"aside",
+	"form",
+	"button",
+	"iframe",
+	"svg",
+	"template",
+	"noscript",
+	"figcaption",
+	"figure"
+]);
+var ignoredClass = /(?:^|[\s_-])(?:ad|ads|advertisement|advertising|publicite|navigation|recommendations?|related|comments?|caption|social|share)(?:$|[\s_-])/i;
+var restrictionClass = /(?:^|[\s_-])(?:paywall|premium-wall|subscription-wall|consent-wall|consentwall|cookie-wall|piano-wall|regwall)(?:$|[\s_-])/i;
+var restrictionText = /(?:article|contenu|suite).{0,60}(?:réservé|réservée|abonnés|abonné)|(?:abonnez-vous|connectez-vous).{0,70}(?:lire|suite|article)|(?:acceptez|consentez).{0,70}(?:continuer|accéder)|subscribe to (?:continue|read)|already a subscriber/i;
+var normalize = (text) => text.replace(/[\t\r\f\v \u00a0]+/g, " ").replace(/ *\n */g, "\n").replace(/\n{3,}/g, "\n\n").trim();
+var result = (status, reason, text = "") => ({
+	status,
+	text,
+	reason
+});
+/** Extracts only a configured visible body or explicitly free Article JSON-LD.
+* `available` describes extraction, never a guarantee of editorial completeness.
+*/
+function extractArticle(html, sourceId) {
+	let cacheable = true;
+	const finish = (status, reason, text = "") => ({
+		...result(status, reason, text),
+		cacheable
+	});
+	const ipm = sourceId === "dh" || sourceId === "lalibre";
+	if (html.length > 2e6) return finish("unavailable", "html_too_large");
+	const candidates = [];
+	const jsonBlocks = [];
+	const frames = [];
+	let restricted = false;
+	let publisherPolicy = false;
+	let freeBodySeen = false;
+	const paragraphCounts = /* @__PURE__ */ new Map();
+	let tooDeep = false;
+	let incomplete = false;
+	let jsonLimit = false;
+	const parser = new Parser({
+		onopentag(name, attrs) {
+			const parent = frames.at(-1);
+			const classes = attrs.class ?? "";
+			const tokens = parent?.candidate ? [] : classes.split(/\s+/);
+			const main = Boolean(parent?.main || name === "main" && attrs.id === "main");
+			const freeStory = Boolean(parent?.freeStory || attrs.id === "story-content-FREE");
+			if (name === "meta" && /^(?:robots|googlebot|bingbot)$/i.test(attrs.name ?? "")) {
+				const directives = (attrs.content ?? "").toLowerCase();
+				if (/(?:^|[,;\s])noarchive(?:$|[,;\s])/.test(directives)) cacheable = false;
+				if (/(?:^|[,;\s])nosnippet(?:$|[,;\s])|(?:^|[,;\s])max-snippet\s*:\s*0(?:$|[,;\s])/.test(directives)) publisherPolicy = true;
+			}
+			const hidden = Boolean(parent?.hidden || "hidden" in attrs || attrs["aria-hidden"] === "true" || /(?:display\s*:\s*none|visibility\s*:\s*hidden)/i.test(attrs.style ?? ""));
+			const inert = ignoredTags.has(name);
+			const ignored = Boolean(parent?.ignored || inert || hidden || ignoredClass.test(classes + " " + (attrs.id ?? "")) || ipm && /ap-(?:StoryInterstitialLink|AdContainer|SmartTarget|StoryVideo)|NewsletterPromo/.test(classes + " " + (attrs.id ?? "")));
+			if (!hidden && !parent?.ignored && !inert && attrs.id !== "piano-paywall-FREE" && restrictionClass.test(classes + " " + (attrs.id ?? ""))) restricted = true;
+			let candidate = parent?.candidate;
+			if (!ignored && !candidate && (ipm ? attrs.id === "article-text" && tokens.includes("ap-Story-content") : sourceId === "gouvernement" ? main && tokens.includes("cmp-text") : (bodyClasses[sourceId] ?? []).some((token) => tokens.includes(token)))) {
+				candidate = [];
+				candidates.push(candidate);
+			}
+			if (!ignored && candidate && /(?:preview|excerpt|truncat|line-clamp)/i.test(classes + " " + (attrs.style ?? ""))) incomplete = true;
+			if (!ignored && candidate && name === "p") paragraphCounts.set(candidate, (paragraphCounts.get(candidate) ?? 0) + 1);
+			const json = name === "script" && attrs.type?.toLowerCase().split(";")[0]?.trim() === "application/ld+json" ? [] : void 0;
+			if (json) jsonBlocks.push(json);
+			frames.push({
+				ignored,
+				hidden,
+				candidate,
+				json,
+				main,
+				freeStory
+			});
+			if (frames.length > 128) tooDeep = true;
+			if (!ignored && /^(?:p|div|section|h[1-6]|li|blockquote|br)$/.test(name)) candidate?.push("\n\n");
+		},
+		ontext(text) {
+			const frame = frames.at(-1);
+			if (frame?.json) frame.json.push(text);
+			if (!frame?.ignored) {
+				frame?.candidate?.push(text);
+				if (frame?.candidate && frame.freeStory && text.trim()) freeBodySeen = true;
+			}
+		},
+		onclosetag(name) {
+			const frame = frames.pop();
+			if (!frame?.ignored && /^(?:p|div|section|h[1-6]|li|blockquote)$/.test(name)) frame?.candidate?.push("\n\n");
+		}
+	}, { decodeEntities: true });
+	try {
+		parser.end(html);
+	} catch {
+		return finish("unavailable", "invalid_html");
+	}
+	if (tooDeep) return finish("unavailable", "html_too_deep");
+	const jsonCandidates = [];
+	for (const block of jsonBlocks) {
+		let parsed;
+		try {
+			parsed = JSON.parse(block.join(""));
+		} catch {
+			continue;
+		}
+		const queue = [parsed];
+		let visited = 0;
+		while (queue.length && visited++ < 2e4) {
+			const value = queue.pop();
+			if (!value || typeof value !== "object") continue;
+			if (Array.isArray(value)) {
+				for (const entry of value) queue.push(entry);
+				continue;
+			}
+			const object = value;
+			if ((Array.isArray(object["@type"]) ? object["@type"] : [object["@type"]]).some((type) => typeof type === "string" && /(?:^|[/#])(?:Article|NewsArticle|ReportageNewsArticle|AnalysisNewsArticle|BlogPosting)$/.test(type))) {
+				const descendants = [object];
+				let denied = false;
+				while (descendants.length) {
+					const child = descendants.pop();
+					if (!child || typeof child !== "object") continue;
+					if (Array.isArray(child)) {
+						for (const entry of child) descendants.push(entry);
+						continue;
+					}
+					const entry = child;
+					if (entry.isAccessibleForFree === false || typeof entry.isAccessibleForFree === "string" && entry.isAccessibleForFree.trim().toLowerCase() === "false") denied = true;
+					if (entry.hasPart) descendants.push(entry.hasPart);
+				}
+				if (denied) restricted = true;
+				if (!denied && (object.isAccessibleForFree === true || typeof object.isAccessibleForFree === "string" && object.isAccessibleForFree.trim().toLowerCase() === "true" || sourceId === "gouvernement") && typeof object.articleBody === "string") jsonCandidates.push(object.articleBody);
+			}
+			for (const entry of Object.values(object)) queue.push(entry);
+		}
+		if (queue.length) jsonLimit = true;
+	}
+	const normalizedCandidates = new Map(candidates.map((parts) => [parts, normalize(parts.join(""))]));
+	if (restricted) return finish("restricted", "access_restricted");
+	if ([...normalizedCandidates.values()].some((body) => restrictionText.test(body))) return finish("unavailable", "possible_access_restriction");
+	if (publisherPolicy) return finish("unavailable", "publisher_policy");
+	if (jsonLimit) return finish("unavailable", "json_too_complex");
+	if (incomplete) return finish("unavailable", "incomplete_body");
+	let selectedCandidates = candidates;
+	if (sourceId === "gouvernement") selectedCandidates = candidates.filter((parts) => (paragraphCounts.get(parts) ?? 0) >= 2).slice(0, 1);
+	const domBodies = selectedCandidates.map((parts) => normalizedCandidates.get(parts) ?? "").filter(Boolean);
+	const jsonBodies = [...new Set(jsonCandidates.map(cleanJsonText).filter(Boolean))];
+	if (ipm) {
+		if (!freeBodySeen || jsonBodies.length !== 1 || domBodies.length !== 1) return finish("unavailable", jsonBodies.length > 1 || domBodies.length > 1 ? "ambiguous_body" : "body_not_found");
+		if (!correspondingBodies(domBodies[0], jsonBodies[0])) return finish("unavailable", "body_mismatch");
+	}
+	const bodies = domBodies.length ? domBodies : ipm ? [] : jsonBodies;
+	if (bodies.some((body) => body.length > MAX_TEXT)) return finish("unavailable", "text_too_large");
+	const maximal = [...new Set(bodies.filter(Boolean))];
+	if (maximal.length > 1) return finish("unavailable", "ambiguous_body");
+	const text = maximal[0] ?? "";
+	if (text.length < MIN_TEXT) return finish("unavailable", text ? "body_too_short" : "body_not_found");
+	if (/(?:…|\.{3}|\[\s*…\s*\])\s*$/.test(text) || /(?:lire la suite|read more|suite de l.article|texte tronqué)\s*[.!…]*$/i.test(text)) return finish("unavailable", "incomplete_body");
+	return finish("available", "body_extracted", text);
+}
+function cleanJsonText(html) {
+	const parts = [];
+	let ignored = 0;
+	const stack = [];
+	new Parser({
+		onopentag(name) {
+			const skip = ignoredTags.has(name);
+			stack.push(skip);
+			if (skip) ignored++;
+			if (!ignored && /^(?:p|div|br)$/.test(name)) parts.push("\n\n");
+		},
+		ontext(text) {
+			if (!ignored) parts.push(text);
+		},
+		onclosetag(name) {
+			if (stack.pop()) ignored--;
+			if (!ignored && /^(?:p|div)$/.test(name)) parts.push("\n\n");
+		}
+	}, { decodeEntities: true }).end(html);
+	return normalize(parts.join(""));
+}
+function correspondingBodies(dom, json) {
+	const words = (text) => text.toLowerCase().match(/[\p{L}\p{N}]+/gu) ?? [];
+	const left = words(dom);
+	const right = words(json);
+	if (!left.length || !right.length || Math.min(left.length, right.length) / Math.max(left.length, right.length) < .9) return false;
+	let matched = 0;
+	for (const word of left) if (word === right[matched]) matched++;
+	if (matched / right.length >= .9) return true;
+	matched = 0;
+	for (const word of right) if (word === left[matched]) matched++;
+	return matched / left.length >= .9;
+}
+// apps/worker/feeds/article-fetch.ts
+var USER_AGENT = "MyPressReview/0.1 (+https://github.com/laurentkai/my-press-review)";
+var ArticleFetchError = class extends Error {
+	reason;
+	constructor(reason) {
+		super(reason);
+		this.reason = reason;
+	}
+};
+async function readBounded(response, max, signal) {
+	if (Number(response.headers.get("content-length")) > max) {
+		await response.body?.cancel();
+		throw new ArticleFetchError("too_large");
+	}
+	const reader = response.body?.getReader();
+	if (!reader) throw new ArticleFetchError("empty_response");
+	const abort = () => {
+		reader.cancel().catch(() => {});
+	};
+	signal.addEventListener("abort", abort, { once: true });
+	let size = 0, text = "";
+	const decoder = new TextDecoder();
+	try {
+		signal.throwIfAborted();
+		while (true) {
+			const { value, done } = await reader.read();
+			signal.throwIfAborted();
+			if (done) break;
+			size += value.byteLength;
+			if (size > max) {
+				await reader.cancel();
+				throw new ArticleFetchError("too_large");
+			}
+			text += decoder.decode(value, { stream: true });
+		}
+		return text + decoder.decode();
+	} finally {
+		signal.removeEventListener("abort", abort);
+		reader.releaseLock();
+	}
+}
+async function documentResponse(url, source, fetcher, signal, allowed) {
+	for (let hop = 0; hop <= 3; hop++) {
+		if (!isSourceUrl(url, source)) throw new ArticleFetchError("redirect_refused");
+		if (allowed && !allowed(url)) throw new ArticleFetchError("robots_disallowed");
+		const response = await fetcher(url, {
+			redirect: "manual",
+			signal,
+			credentials: "omit",
+			cache: "no-store",
+			headers: {
+				"User-Agent": USER_AGENT,
+				Accept: "text/html,application/xhtml+xml,text/plain;q=0.5",
+				"Cache-Control": "no-cache"
+			}
+		});
+		if (response.status < 300 || response.status >= 400) return {
+			response,
+			url
+		};
+		const location = response.headers.get("location");
+		await response.body?.cancel();
+		if (!location) throw new ArticleFetchError("redirect_refused");
+		const target = new URL(location, url);
+		if (/(?:consent|privacy)/i.test(target.hostname) && !isSourceUrl(target.href, source)) throw new ArticleFetchError("consent_required");
+		if (hop === 3 || !isSourceUrl(target.href, source)) throw new ArticleFetchError("redirect_refused");
+		url = target.href;
+	}
+	throw new ArticleFetchError("redirect_refused");
+}
+async function fetchArticlePage(db, url, source, fetcher = fetch, now = Date.now()) {
+	if (!isSourceUrl(url, source)) throw new ArticleFetchError("url_refused");
+	const signal = AbortSignal.timeout(15e3);
+	const origin = new URL(url).origin;
+	let robots = await db.prepare("SELECT body,status FROM trial_article_robots WHERE origin=? AND next_check_at>?").bind(origin, now).first();
+	if (!robots) {
+		let body = "", status = "ok";
+		try {
+			const { response } = await documentResponse(origin + "/robots.txt", source, fetcher, signal);
+			if (!response.ok) {
+				await response.body?.cancel();
+				throw new ArticleFetchError("robots_unavailable");
+			}
+			body = await readBounded(response, 128e3, signal);
+			if (body.trim().startsWith("<")) throw new ArticleFetchError("robots_unavailable");
+		} catch {
+			status = "robots_unavailable";
+			body = "";
+		}
+		await db.prepare("INSERT INTO trial_article_robots(origin,body,status,next_check_at) VALUES(?,?,?,?) ON CONFLICT(origin) DO UPDATE SET body=excluded.body,status=excluded.status,next_check_at=excluded.next_check_at").bind(origin, body, status, now + (status === "ok" ? 36e5 : 9e5)).run();
+		robots = {
+			body,
+			status
+		};
+	}
+	if (robots.status !== "ok") throw new ArticleFetchError("robots_unavailable");
+	const rules = (0, import_robots_parser.default)(origin + "/robots.txt", robots.body);
+	if (rules.isAllowed(url, "MyPressReview") !== true) throw new ArticleFetchError("robots_disallowed");
+	const delay = rules.getCrawlDelay("MyPressReview") ?? 0;
+	if (!Number.isFinite(delay) || delay < 0 || delay > 86400) throw new ArticleFetchError("robots_disallowed");
+	const { response } = await documentResponse(url, source, fetcher, signal, (target) => new URL(target).origin === origin && rules.isAllowed(target, "MyPressReview") === true);
+	if (!response.ok) {
+		await response.body?.cancel();
+		throw new ArticleFetchError(response.status === 403 ? "blocked_403" : response.status === 429 ? "rate_limited" : response.status === 404 ? "not_found" : "server_error");
+	}
+	if (!/^(?:text\/html|application\/xhtml\+xml)(?:;|$)/i.test(response.headers.get("content-type") ?? "")) {
+		await response.body?.cancel();
+		throw new ArticleFetchError("unsupported_content");
+	}
+	const robotTags = response.headers.get("x-robots-tag") ?? "";
+	if (/(?:nosnippet|max-snippet\s*:\s*0)(?:\b|$)/i.test(robotTags)) {
+		await response.body?.cancel();
+		throw new ArticleFetchError("publisher_policy");
+	}
+	const result = extractArticle(await preprocessArticleHtml(await readBounded(response, 2e6, signal)), source.id);
+	return {
+		...result,
+		cacheable: !("cacheable" in result && result.cacheable === false) && !/(?:^|[\s,:])noarchive\b/i.test(robotTags),
+		crawlDelayMs: Math.max(15e3, delay * 1e3)
+	};
+}
+// apps/worker/feeds/article-collector.ts
+var TRANSIENT_REASONS = [
+	"network_error",
+	"timeout",
+	"server_error",
+	"robots_unavailable",
+	"rate_limited"
+];
+function articlePolicy(sourceId, access) {
+	if (access === "restricted") return "access_restricted";
+	if (sourceId === "7sur7") return "publisher_policy";
+	if (![
+		"dh",
+		"lalibre",
+		"gouvernement"
+	].includes(sourceId)) return "source_unverified";
+	if (["dh", "lalibre"].includes(sourceId) && access !== "free") return "access_unverified";
+	return null;
+}
+async function collectArticle(db, id, fetcher = fetch, now = Date.now()) {
+	const article = await db.prepare("SELECT a.id,a.source_id,a.url,a.access_level,a.full_status,a.full_next_fetch_at,a.full_reason FROM trial_articles a JOIN trial_sources s ON s.id=a.source_id WHERE a.id=? AND s.enabled=1").bind(id).first();
+	if (!article) return {
+		processed: false,
+		status: "missing",
+		reason: "not_found",
+		nextAttemptAt: 0
+	};
+	const policy = articlePolicy(article.source_id, article.access_level);
+	if (policy) {
+		const status = policy === "access_restricted" ? "restricted" : "unavailable";
+		await db.prepare("UPDATE trial_articles SET full_status=?,full_reason=?,full_text='',full_next_fetch_at=? WHERE id=?").bind(status, policy, now + 864e5, id).run();
+		return {
+			processed: false,
+			status,
+			reason: policy,
+			nextAttemptAt: now + 864e5
+		};
+	}
+	if (article.full_status === "available" || article.full_status === "restricted" || article.full_status === "unavailable" && !TRANSIENT_REASONS.includes(article.full_reason)) return {
+		processed: false,
+		status: article.full_status,
+		reason: article.full_reason,
+		nextAttemptAt: article.full_next_fetch_at
+	};
+	if (article.full_next_fetch_at > now) return {
+		processed: false,
+		status: article.full_status,
+		reason: "not_due",
+		nextAttemptAt: article.full_next_fetch_at
+	};
+	const source = trialCatalog.find((source) => source.id === article.source_id);
+	const owner = crypto.randomUUID();
+	if (!await db.prepare("UPDATE trial_sources SET article_lease_owner=?,article_lease_until=? WHERE id=? AND enabled=1 AND article_lease_until<=? AND article_next_fetch_at<=? AND lease_until<=? RETURNING id").bind(owner, now + 9e4, source.id, now, now, now).first()) {
+		const state = await db.prepare("SELECT article_next_fetch_at,article_lease_until,lease_until FROM trial_sources WHERE id=?").bind(source.id).first();
+		return {
+			processed: false,
+			status: article.full_status,
+			reason: "source_busy",
+			nextAttemptAt: Math.max(state?.article_next_fetch_at ?? 0, state?.article_lease_until ?? 0, state?.lease_until ?? 0)
+		};
+	}
+	let delay = 15e3;
+	try {
+		let status = "unavailable", text = "", reason = "network_error", cacheable = true;
+		try {
+			const result = await fetchArticlePage(db, article.url, source, fetcher, now);
+			status = result.status;
+			text = result.text;
+			reason = result.reason;
+			cacheable = result.cacheable;
+			delay = result.crawlDelayMs;
+			if (status === "available" && !cacheable) status = "live";
+		} catch (error) {
+			reason = error instanceof ArticleFetchError ? error.reason : error instanceof Error && ["AbortError", "TimeoutError"].includes(error.name) ? "timeout" : "network_error";
+		}
+		if ([
+			"blocked_403",
+			"robots_disallowed",
+			"publisher_policy"
+		].includes(reason)) delay = Math.max(delay, 216e5);
+		else if (reason === "rate_limited") delay = Math.max(delay, 36e5);
+		else if (reason === "robots_unavailable") delay = Math.max(delay, 9e5);
+		const completedAt = Date.now();
+		const nextAttempt = completedAt + (status === "available" ? 864e5 : status === "live" ? delay : ["restricted", "unavailable"].includes(status) ? TRANSIENT_REASONS.includes(reason) ? Math.max(9e5, delay) : 864e5 : 9e5);
+		if (!await db.prepare(`UPDATE trial_articles SET full_status=?,full_text=?,full_reason=?,full_fetched_at=?,full_next_fetch_at=? WHERE id=? AND access_level!='restricted' AND EXISTS(SELECT 1 FROM trial_sources WHERE id=? AND enabled=1 AND article_lease_owner=? AND article_lease_until>?) RETURNING id`).bind(status, status === "available" ? text : "", reason, completedAt, nextAttempt, id, source.id, owner, Date.now()).first()) return {
+			processed: false,
+			status: "unavailable",
+			reason: "source_changed",
+			nextAttemptAt: Date.now() + delay
+		};
+		return {
+			processed: true,
+			status,
+			reason,
+			nextAttemptAt: nextAttempt,
+			...status === "live" ? { liveText: text } : {}
+		};
+	} finally {
+		await db.prepare("UPDATE trial_sources SET article_lease_owner=NULL,article_lease_until=0,article_next_fetch_at=? WHERE id=? AND article_lease_owner=?").bind(Date.now() + delay, source.id, owner).run();
+	}
+}
+async function scheduledArticles(db, now = Date.now()) {
+	const due = await db.prepare(`SELECT a.id FROM trial_articles a JOIN trial_sources s ON s.id=a.source_id WHERE s.enabled=1 AND a.source_id='gouvernement' AND a.access_level!='restricted' AND (a.full_status='pending' OR (a.full_status='unavailable' AND a.full_reason IN (${TRANSIENT_REASONS.map(() => "?").join(",")}))) AND a.full_next_fetch_at<=? AND s.article_next_fetch_at<=? AND s.article_lease_until<=? AND s.lease_until<=? ORDER BY COALESCE(a.published_at,a.collected_at) DESC LIMIT 1`).bind(...TRANSIENT_REASONS, now, now, now, now).all();
+	return Promise.allSettled(due.results.map((article) => collectArticle(db, article.id, fetch, now)));
 }
 // node_modules/xmlchars/xml/1.0/ed5.js
 var require_ed5 = /* @__PURE__ */ __commonJSMin(((exports) => {
@@ -5247,7 +8221,7 @@ function articleUrl(value, source) {
 		return null;
 	}
 }
-function parseFeed(xml, source) {
+function parseFeed(xml, source, includeRestricted = false) {
 	const parser = new import_saxes.SaxesParser({ xmlns: false });
 	const stack = [];
 	let root = "";
@@ -5360,10 +8334,11 @@ function parseFeed(xml, source) {
 			const title = plainText(item.title ?? "", 500);
 			const url = articleUrl(item.link ?? "", source);
 			const rights = item["dcterms:accessrights"]?.trim().toUpperCase();
-			const accessLevel = rights === "FREE" ? "free" : ["PAYING", "MEMBER"].includes(rights ?? "") ? "restricted" : "unknown";
+			const paid = item["dpp:paid"]?.trim().toLowerCase();
+			const accessLevel = paid === "true" || ["PAYING", "MEMBER"].includes(rights ?? "") ? "restricted" : rights === "FREE" || paid === "false" ? "free" : "unknown";
 			const description = item.description ?? item.summary ?? "";
 			const image = images.sort((a, b) => a.priority - b.priority)[0];
-			if (title && url && item["dpp:paid"]?.trim().toLowerCase() !== "true") items.push({
+			if (title && url && (includeRestricted || paid !== "true")) items.push({
 				url,
 				title,
 				excerpt: plainText(description, 300),
@@ -5406,8 +8381,8 @@ async function fetchFeed(source, state, fetcher = fetch) {
 			headers: {
 				Accept: "application/rss+xml, application/atom+xml, application/xml, text/xml, */*;q=0.2",
 				"User-Agent": "MyPressReview/0.1 (+https://github.com/laurentkai/my-press-review)",
-				...state.reading_metadata_version !== 0 && state.etag ? { "If-None-Match": state.etag } : {},
-				...state.reading_metadata_version !== 0 && state.last_modified ? { "If-Modified-Since": state.last_modified } : {}
+				...(state.reading_metadata_version ?? 2) >= 2 && state.etag ? { "If-None-Match": state.etag } : {},
+				...(state.reading_metadata_version ?? 2) >= 2 && state.last_modified ? { "If-Modified-Since": state.last_modified } : {}
 			}
 		});
 		if (response.status < 300 || response.status >= 400 || response.status === 304) break;
@@ -5457,7 +8432,7 @@ async function fetchFeed(source, state, fetcher = fetch) {
 	} finally {
 		reader.releaseLock();
 	}
-	const items = parseFeed(xml, source).slice(0, 30);
+	const items = parseFeed(xml, source, true).slice(0, 30);
 	return {
 		status: items.length ? "ok" : "empty",
 		items,
@@ -5472,7 +8447,7 @@ async function collectSource(db, id, fetcher = fetch, now = Date.now()) {
 		status: "unavailable"
 	};
 	const owner = crypto.randomUUID();
-	const state = await db.prepare("UPDATE trial_sources SET lease_owner=?, lease_until=?, last_attempt_at=? WHERE id=? AND enabled=1 AND next_fetch_at<=? AND lease_until<=? RETURNING id, etag, last_modified, reading_metadata_version").bind(owner, now + 12e4, now, id, now, now).first();
+	const state = await db.prepare("UPDATE trial_sources SET lease_owner=?, lease_until=?, last_attempt_at=? WHERE id=? AND enabled=1 AND next_fetch_at<=? AND lease_until<=? AND article_lease_until<=? RETURNING id, etag, last_modified, reading_metadata_version").bind(owner, now + 12e4, now, id, now, now, now).first();
 	if (!state) return {
 		processed: false,
 		status: "not_due"
@@ -5484,12 +8459,20 @@ async function collectSource(db, id, fetcher = fetch, now = Date.now()) {
 		for (const item of result.items) {
 			const articleId = await digest(id + "\n" + item.url);
 			const topic = classifyArticle(item, id);
+			if (item.accessLevel === "restricted") {
+				writes.push(db.prepare(`UPDATE trial_articles SET access_level='restricted',excerpt='',body_text='',full_text='',full_status='restricted',full_reason='access_restricted',image_url=NULL,image_credit='',collected_at=? WHERE source_id=? AND url=? AND EXISTS(SELECT 1 FROM trial_sources WHERE id=? AND enabled=1 AND lease_owner=? AND lease_until>?)`).bind(collected, id, item.url, id, owner, Date.now()));
+				continue;
+			}
 			writes.push(db.prepare(`INSERT INTO trial_articles(id,source_id,url,title,excerpt,published_at,collected_at,body_text,image_url,image_credit,access_level,publisher_categories,theme,subtheme)
         SELECT ?,?,?,?,?,?,?,?,?,?,?,?,?,? WHERE EXISTS(SELECT 1 FROM trial_sources WHERE id=? AND enabled=1 AND lease_owner=? AND lease_until>?)
-        ON CONFLICT(source_id,url) DO UPDATE SET title=excluded.title,excerpt=excluded.excerpt,published_at=COALESCE(excluded.published_at,trial_articles.published_at),collected_at=excluded.collected_at,body_text=excluded.body_text,image_url=excluded.image_url,image_credit=excluded.image_credit,access_level=excluded.access_level,publisher_categories=excluded.publisher_categories,theme=excluded.theme,subtheme=excluded.subtheme`).bind(articleId, id, item.url, item.title, item.excerpt, item.publishedAt, collected, item.bodyText, item.imageUrl, item.imageCredit, item.accessLevel, JSON.stringify(item.categories), topic.theme, topic.subtheme, id, owner, Date.now()));
+        ON CONFLICT(source_id,url) DO UPDATE SET title=excluded.title,excerpt=excluded.excerpt,published_at=COALESCE(excluded.published_at,trial_articles.published_at),collected_at=excluded.collected_at,body_text=excluded.body_text,image_url=excluded.image_url,image_credit=excluded.image_credit,access_level=excluded.access_level,publisher_categories=excluded.publisher_categories,theme=excluded.theme,subtheme=excluded.subtheme,
+        full_text=CASE WHEN excluded.access_level='restricted' THEN '' ELSE trial_articles.full_text END,
+        full_status=CASE WHEN excluded.access_level='restricted' THEN 'restricted' WHEN trial_articles.access_level='restricted' AND excluded.access_level='free' THEN 'pending' ELSE trial_articles.full_status END,
+        full_reason=CASE WHEN excluded.access_level='restricted' THEN 'access_restricted' WHEN trial_articles.access_level='restricted' AND excluded.access_level='free' THEN '' ELSE trial_articles.full_reason END,
+        full_next_fetch_at=CASE WHEN trial_articles.access_level='restricted' AND excluded.access_level='free' THEN 0 ELSE trial_articles.full_next_fetch_at END`).bind(articleId, id, item.url, item.title, item.excerpt, item.publishedAt, collected, item.bodyText, item.imageUrl, item.imageCredit, item.accessLevel, JSON.stringify(item.categories), topic.theme, topic.subtheme, id, owner, Date.now()));
 		}
 		writes.push(db.prepare("DELETE FROM trial_articles WHERE source_id=? AND (collected_at<? OR id NOT IN (SELECT id FROM trial_articles WHERE source_id=? ORDER BY collected_at DESC LIMIT 200))").bind(id, (/* @__PURE__ */ new Date(now - 12096e5)).toISOString(), id));
-		writes.push(db.prepare("UPDATE trial_sources SET status=?,last_success_at=?,next_fetch_at=?,etag=?,last_modified=?,last_item_count=?,reading_metadata_version=1,lease_until=0,lease_owner=NULL WHERE id=? AND lease_owner=? AND enabled=1").bind(result.status, now, now + MIN_INTERVAL, result.etag, result.modified, result.items.length, id, owner));
+		writes.push(db.prepare("UPDATE trial_sources SET status=?,last_success_at=?,next_fetch_at=?,etag=?,last_modified=?,last_item_count=?,reading_metadata_version=2,lease_until=0,lease_owner=NULL WHERE id=? AND lease_owner=? AND enabled=1").bind(result.status, now, now + MIN_INTERVAL, result.etag, result.modified, result.items.length, id, owner));
 		writes.push(db.prepare("UPDATE trial_sources SET lease_until=0,lease_owner=NULL WHERE id=? AND lease_owner=?").bind(id, owner));
 		await db.batch(writes);
 		return {
@@ -5513,11 +8496,13 @@ async function collectSource(db, id, fetcher = fetch, now = Date.now()) {
 	}
 }
 async function scheduledCollection(db, now = Date.now()) {
-	const state = await db.prepare("SELECT id FROM trial_sources WHERE enabled=1 AND next_fetch_at<=? AND lease_until<=? ORDER BY next_fetch_at,id LIMIT 1").bind(now, now).first();
+	const state = await db.prepare("SELECT id FROM trial_sources WHERE enabled=1 AND next_fetch_at<=? AND lease_until<=? AND article_lease_until<=? ORDER BY next_fetch_at,id LIMIT 1").bind(now, now, now).first();
 	if (state) await collectSource(db, state.id);
+	else await scheduledArticles(db, now);
 	await db.batch([db.prepare("DELETE FROM trial_sessions WHERE expires_at<=?").bind(now), db.prepare("DELETE FROM trial_login_limits WHERE expires_at<=?").bind(now)]);
 }
 // apps/worker/trial.ts
+var visibleArticle = "a.access_level!='restricted' AND a.full_status!='restricted' AND (a.access_level='free' OR a.full_status IN ('available','live'))";
 function articleResponse(item) {
 	const categories = JSON.parse(item.publisher_categories);
 	const topic = item.theme ? {
@@ -5537,22 +8522,27 @@ function articleResponse(item) {
 		collectedAt: item.collected_at,
 		imageUrl: item.image_url,
 		imageCredit: item.image_credit,
-		accessLevel: item.access_level,
+		accessLevel: item.full_status === "restricted" ? "restricted" : item.access_level,
 		publisherCategories: categories,
+		fullTextStatus: item.access_level === "restricted" ? "restricted" : item.full_status,
 		...topic
 	};
 }
 async function readArticle(c) {
-	const row = await c.env.DB.prepare("SELECT a.* FROM trial_articles a JOIN trial_sources s ON s.id=a.source_id WHERE a.id=? AND s.enabled=1").bind(c.req.param("id")).first();
+	const row = await c.env.DB.prepare(`SELECT a.* FROM trial_articles a JOIN trial_sources s ON s.id=a.source_id WHERE a.id=? AND s.enabled=1 AND ${visibleArticle}`).bind(c.req.param("id")).first();
 	if (!row) return c.json({ error: "NOT_FOUND" }, 404);
 	return c.json({
 		...articleResponse(row),
-		bodyText: row.access_level === "restricted" ? "" : row.body_text ?? ""
+		bodyText: row.access_level === "restricted" || row.full_status === "restricted" ? "" : row.full_status === "available" ? row.full_text ?? "" : row.body_text ?? "",
+		contentKind: row.full_status === "available" && row.access_level !== "restricted" ? "article" : "feed",
+		fullTextReason: row.full_reason || articlePolicy(row.source_id, row.access_level) || "",
+		fullTextFetchedAt: row.full_fetched_at,
+		fullTextNextAttemptAt: row.full_next_fetch_at
 	});
 }
 async function workspace(c) {
-	const states = await c.env.DB.prepare("SELECT s.*, (SELECT COUNT(*) FROM trial_articles a WHERE a.source_id=s.id) AS article_count FROM trial_sources s").all();
-	const rows = await c.env.DB.prepare(`SELECT * FROM (SELECT a.id,a.source_id,a.url,a.title,a.excerpt,a.published_at,a.collected_at,a.image_url,a.image_credit,a.access_level,a.publisher_categories,a.theme,a.subtheme, ROW_NUMBER() OVER(PARTITION BY source_id ORDER BY COALESCE(published_at,collected_at) DESC,a.id) AS position FROM trial_articles a JOIN trial_sources s ON s.id=a.source_id WHERE s.enabled=1) WHERE position<=20 ORDER BY COALESCE(published_at,collected_at) DESC,id`).all();
+	const states = await c.env.DB.prepare(`SELECT s.*, (SELECT COUNT(*) FROM trial_articles a WHERE a.source_id=s.id AND ${visibleArticle}) AS article_count FROM trial_sources s`).all();
+	const rows = await c.env.DB.prepare(`SELECT * FROM (SELECT a.id,a.source_id,a.url,a.title,a.excerpt,a.published_at,a.collected_at,a.image_url,a.image_credit,a.access_level,a.publisher_categories,a.theme,a.subtheme,a.full_status,a.full_reason,a.full_fetched_at,a.full_next_fetch_at, ROW_NUMBER() OVER(PARTITION BY source_id ORDER BY COALESCE(published_at,collected_at) DESC,a.id) AS position FROM trial_articles a JOIN trial_sources s ON s.id=a.source_id WHERE s.enabled=1 AND ${visibleArticle}) WHERE position<=20 ORDER BY COALESCE(published_at,collected_at) DESC,id`).all();
 	return c.json({
 		sources: trialCatalog.map((source) => {
 			const state = states.results.find((entry) => entry.id === source.id);
@@ -5587,6 +8577,11 @@ async function refreshSource(c) {
 	if (!trialCatalog.some((entry) => entry.id === c.req.param("id"))) return c.json({ error: "NOT_FOUND" }, 404);
 	return c.json(await collectSource(c.env.DB, c.req.param("id")));
 }
+async function retrieveArticle(c) {
+	const result = await collectArticle(c.env.DB, c.req.param("id"));
+	if (result.status === "missing" || result.status === "restricted") return c.json({ error: "NOT_FOUND" }, 404);
+	return c.json(result);
+}
 // apps/worker/index.ts
 var app = new Hono();
 app.use("*", secureHeaders());
@@ -5602,7 +8597,7 @@ app.use("/api/*", async (c, next) => {
 		if (!sameOrigin(c)) return c.json({ error: "ORIGIN_REFUSED" }, 403);
 		return next();
 	}
-	if ((c.req.path === "/api/trial/workspace" || /^\/api\/trial\/articles\/[a-f0-9]{64}$/.test(c.req.path) || c.req.path === "/api/trial/logout" || /^\/api\/trial\/sources\/[a-z0-9]+(?:\/refresh)?$/.test(c.req.path)) && await trialAuthenticated(c)) {
+	if ((c.req.path === "/api/trial/workspace" || /^\/api\/trial\/articles\/[a-f0-9]{64}(?:\/content)?$/.test(c.req.path) || c.req.path === "/api/trial/logout" || /^\/api\/trial\/sources\/[a-z0-9]+(?:\/refresh)?$/.test(c.req.path)) && await trialAuthenticated(c)) {
 		if (!["GET", "HEAD"].includes(c.req.method) && !sameOrigin(c)) return c.json({ error: "ORIGIN_REFUSED" }, 403);
 		return next();
 	}
@@ -5630,6 +8625,7 @@ app.post("/api/trial/login", loginTrial);
 app.post("/api/trial/logout", logoutTrial);
 app.get("/api/trial/workspace", workspace);
 app.get("/api/trial/articles/:id", readArticle);
+app.post("/api/trial/articles/:id/content", retrieveArticle);
 app.put("/api/trial/sources/:id", toggleSource);
 app.post("/api/trial/sources/:id/refresh", refreshSource);
 app.all("/api/auth/*", (c) => c.json({
