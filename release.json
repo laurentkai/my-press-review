@@ -1,14 +1,15 @@
 {
-  "sourceSha": "f163898c0f0c580e9dc93433aec0a64d004026af",
+  "sourceSha": "c2fb5a875de1ede655a18b4da89a949594bafa83",
   "wranglerVersion": "4.162.0",
   "files": {
     "migrations/0001_identity_and_sources.sql": "8e951f8ef8340e463cafcb23d5753a042c67015481229bccee0fb2668248efad",
+    "migrations/0002_private_feed_trial.sql": "1a66c6eec432cb89479a24bfdd1993117ef33566ff89cd2ba69f0d616cc89fb0",
     "public/.assetsignore": "4f83140d5f4293ab55bd1207327e995c83258f1e7d3145b1b5d7a3d17fdfe0a7",
     "public/_headers": "870f4d17c76f479a958794c8a3ee61dd0a9d1fbc202241391303e352ce577020",
-    "public/assets/index-DI9psdNu.js": "8ec901f1d8a847da2b5830b5452b415c1be2747abf797069e68d555061929f7a",
-    "public/assets/index-RgadbviA.css": "e4455dc2f9080166c29b1e19cbcb130b94a7f73b3b44029e9e30fc41bac618f1",
-    "public/index.html": "03c5fc1b2d79f26e2e2aaf53377e59b9ace342b161a5211d495389a4540b5f90",
-    "worker/index.js": "b48845311fa5c3e01159f0437f07f42d93e0eefd4deb513fa16d51b3f02ef267",
-    "wrangler.json": "645fdb6cd877ff9a32a32a6f85b1be072e983f142aaf83b2353916f8447e120b"
+    "public/assets/index-Dj0tKs6P.css": "026667acf90b8677ddf4c59abf053dc396846a6a8fac13c2f06e31a82b6abe2f",
+    "public/assets/index-KWDE6hrf.js": "32210edd99abc8e65a595115bea630d96c6f25720471814b683378055833fb94",
+    "public/index.html": "74b357e10b385dd9737d98125987a8ef67bff7d1bb8fd530ecf12536d137f4b8",
+    "worker/index.js": "7a7100c4e1a276b3c79fe7f215d48b860a572f37d4539e97c197983fa0673fcd",
+    "wrangler.json": "b22f8b81d986894fcf173d54f04498e518b9f86bebb6a1ba5198317340f5456e"
   }
 }
