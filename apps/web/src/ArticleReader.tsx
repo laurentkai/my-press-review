@@ -66,11 +66,13 @@ export function ArticleReader({
   source,
   onBack,
   onExpired,
+  onUnavailable,
 }: {
   article: TrialArticle;
   source: TrialSource;
   onBack: () => void;
   onExpired: () => void;
+  onUnavailable?: () => void;
 }) {
   const [detail, setDetail] = useState<TrialArticleDetail | null>(null);
   const [error, setError] = useState("");
@@ -88,6 +90,10 @@ export function ArticleReader({
       });
       if (response.status === 401) {
         onExpired();
+        return null;
+      }
+      if (response.status === 404 && onUnavailable) {
+        onUnavailable();
         return null;
       }
       if (!response.ok)
@@ -126,6 +132,10 @@ export function ArticleReader({
         );
         if (response.status === 401) {
           onExpired();
+          return;
+        }
+        if (response.status === 404 && onUnavailable) {
+          onUnavailable();
           return;
         }
         if (!response.ok)
@@ -172,7 +182,7 @@ export function ArticleReader({
         );
     });
     return () => abort.abort();
-  }, [article.id, attempt, onExpired]);
+  }, [article.id, attempt, onExpired, onUnavailable]);
   const current =
     detail?.fullTextStatus === "restricted"
       ? { ...detail, accessLevel: "restricted" as const }

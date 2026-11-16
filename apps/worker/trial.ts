@@ -7,6 +7,10 @@ import { collectArticle, articlePolicy } from "./feeds/article-collector";
 import type { FullTextStatus } from "../../packages/shared/types";
 import { collectSource } from "./feeds/collector";
 
+// Apply visibility before ranking/limiting: subscriber-only and unverified
+// access never occupy a slot or escape through a saved detail URL.
+const visibleArticle =
+  "a.access_level!='restricted' AND a.full_status!='restricted' AND (a.access_level='free' OR a.full_status IN ('available','live'))";
 interface State {
   id: string;
   enabled: number;
@@ -62,7 +66,7 @@ function articleResponse(item: ArticleRow) {
 }
 export async function readArticle(c: Context<{ Bindings: Bindings }>) {
   const row = await c.env.DB.prepare(
-    "SELECT a.* FROM trial_articles a JOIN trial_sources s ON s.id=a.source_id WHERE a.id=? AND s.enabled=1",
+    `SELECT a.* FROM trial_articles a JOIN trial_sources s ON s.id=a.source_id WHERE a.id=? AND s.enabled=1 AND ${visibleArticle}`,
   )
     .bind(c.req.param("id"))
     .first<ArticleRow>();
@@ -87,10 +91,10 @@ export async function readArticle(c: Context<{ Bindings: Bindings }>) {
 }
 export async function workspace(c: Context<{ Bindings: Bindings }>) {
   const states = await c.env.DB.prepare(
-    "SELECT s.*, (SELECT COUNT(*) FROM trial_articles a WHERE a.source_id=s.id) AS article_count FROM trial_sources s",
+    `SELECT s.*, (SELECT COUNT(*) FROM trial_articles a WHERE a.source_id=s.id AND ${visibleArticle}) AS article_count FROM trial_sources s`,
   ).all<State>();
   const rows = await c.env.DB.prepare(
-    `SELECT * FROM (SELECT a.id,a.source_id,a.url,a.title,a.excerpt,a.published_at,a.collected_at,a.image_url,a.image_credit,a.access_level,a.publisher_categories,a.theme,a.subtheme,a.full_status,a.full_reason,a.full_fetched_at,a.full_next_fetch_at, ROW_NUMBER() OVER(PARTITION BY source_id ORDER BY COALESCE(published_at,collected_at) DESC,a.id) AS position FROM trial_articles a JOIN trial_sources s ON s.id=a.source_id WHERE s.enabled=1) WHERE position<=20 ORDER BY COALESCE(published_at,collected_at) DESC,id`,
+    `SELECT * FROM (SELECT a.id,a.source_id,a.url,a.title,a.excerpt,a.published_at,a.collected_at,a.image_url,a.image_credit,a.access_level,a.publisher_categories,a.theme,a.subtheme,a.full_status,a.full_reason,a.full_fetched_at,a.full_next_fetch_at, ROW_NUMBER() OVER(PARTITION BY source_id ORDER BY COALESCE(published_at,collected_at) DESC,a.id) AS position FROM trial_articles a JOIN trial_sources s ON s.id=a.source_id WHERE s.enabled=1 AND ${visibleArticle}) WHERE position<=20 ORDER BY COALESCE(published_at,collected_at) DESC,id`,
   ).all<ArticleRow>();
   return c.json({
     sources: trialCatalog.map((source) => {
@@ -133,6 +137,7 @@ export async function refreshSource(c: Context<{ Bindings: Bindings }>) {
 
 export async function retrieveArticle(c: Context<{ Bindings: Bindings }>) {
   const result = await collectArticle(c.env.DB, c.req.param("id")!);
-  if (result.status === "missing") return c.json({ error: "NOT_FOUND" }, 404);
+  if (result.status === "missing" || result.status === "restricted")
+    return c.json({ error: "NOT_FOUND" }, 404);
   return c.json(result);
 }

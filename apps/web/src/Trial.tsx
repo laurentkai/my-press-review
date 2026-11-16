@@ -141,6 +141,13 @@ export function PrivateWorkspace({ onExit }: { onExit: () => void }) {
     setData((await response.json()) as TrialWorkspace);
     setError("");
   }
+  const discardArticle = useCallback(() => {
+    setSelected(null);
+    setNotice("Cet article n’est plus disponible et a été retiré de la revue.");
+    load().catch(() =>
+      setError("Impossible de recharger les articles disponibles."),
+    );
+  }, []);
   useEffect(() => {
     const abort = new AbortController();
     const reload = () => {
@@ -224,7 +231,14 @@ export function PrivateWorkspace({ onExit }: { onExit: () => void }) {
     }
   }
   const sources = data?.sources ?? [];
-  const allArticles = data?.articles ?? [];
+  const allArticles = (data?.articles ?? []).filter(
+    (article) =>
+      article.accessLevel !== "restricted" &&
+      article.fullTextStatus !== "restricted" &&
+      (article.accessLevel === "free" ||
+        article.fullTextStatus === "available" ||
+        article.fullTextStatus === "live"),
+  );
   const articles = allArticles.filter((article) => {
     return (
       (sourceId === "all" || article.sourceId === sourceId) &&
@@ -324,7 +338,7 @@ export function PrivateWorkspace({ onExit }: { onExit: () => void }) {
                 </h1>
                 <p className="muted">
                   {view === "edition"
-                    ? "L’actualité par thème, à lire ici ou chez l’éditeur."
+                    ? "L’actualité accessible par thème. Les articles abonnés sont exclus."
                     : "Neuf médias sélectionnés. Chaque état reflète le dernier essai de collecte."}
                 </p>
               </div>
@@ -367,6 +381,7 @@ export function PrivateWorkspace({ onExit }: { onExit: () => void }) {
               article={selected}
               source={sources.find((entry) => entry.id === selected.sourceId)!}
               onExpired={expire}
+              onUnavailable={discardArticle}
               onBack={() => {
                 returnFocus.current = selected.id;
                 setSelected(null);
@@ -409,7 +424,7 @@ export function PrivateWorkspace({ onExit }: { onExit: () => void }) {
                         <dd>{date(source.lastSuccessAt)}</dd>
                       </div>
                       <div>
-                        <dt>Articles conservés</dt>
+                        <dt>Articles disponibles</dt>
                         <dd>{source.articleCount}</dd>
                       </div>
                     </dl>

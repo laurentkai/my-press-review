@@ -238,15 +238,15 @@ describe("persistance des métadonnées et reclassement à la collecte", () => {
       .get();
     expect(refreshed).toMatchObject({
       id: initial?.id,
-      title: "Titre actualisé",
+      title: "Une annonce",
       body_text: "",
-      excerpt: "Nouveau texte réservé",
+      excerpt: "",
       image_url: null,
       image_credit: "",
       access_level: "restricted",
-      publisher_categories: '["Économie","Marchés financiers"]',
-      theme: "Économie",
-      subtheme: "Marchés",
+      publisher_categories: '["Sport","Football"]',
+      theme: "Sport",
+      subtheme: "Football",
     });
     expect(refreshed?.collected_at).not.toBe(initial?.collected_at);
     expect(
@@ -304,7 +304,7 @@ describe("review regressions: scoped credits and metadata upgrade", () => {
           "SELECT reading_metadata_version FROM trial_sources WHERE id='dh'",
         )
         .get()?.reading_metadata_version,
-    ).toBe(1);
+    ).toBe(2);
     sqlite.exec("UPDATE trial_sources SET next_fetch_at=0 WHERE id='dh'");
     await collectSource(db, "dh", fetcher);
     expect(fetcher.mock.calls[1][1]?.headers).toMatchObject({

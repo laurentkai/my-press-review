@@ -275,13 +275,13 @@ export function extractArticle(
   const normalizedCandidates = new Map(
     candidates.map((parts) => [parts, normalize(parts.join(""))]),
   );
+  if (restricted) return finish("restricted", "access_restricted");
   if (
-    restricted ||
     [...normalizedCandidates.values()].some((body) =>
       restrictionText.test(body),
     )
   )
-    return finish("restricted", "access_restricted");
+    return finish("unavailable", "possible_access_restriction");
   if (publisherPolicy) return finish("unavailable", "publisher_policy");
   if (jsonLimit) return finish("unavailable", "json_too_complex");
   if (incomplete) return finish("unavailable", "incomplete_body");

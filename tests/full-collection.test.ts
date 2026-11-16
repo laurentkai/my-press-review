@@ -198,7 +198,7 @@ describe("full-page D1 jobs and publisher isolation", () => {
     expect(String(row().full_text).length).toBeGreaterThan(2000);
     expect(await collectArticle(memory.db, id, fetcher)).toMatchObject({
       processed: false,
-      reason: "not_due",
+      reason: "body_extracted",
     });
     const env: Bindings = {
       DB: memory.db,
@@ -266,6 +266,7 @@ describe("full-page D1 jobs and publisher isolation", () => {
   it.each([
     ["7sur7", "unknown"],
     ["figaro", "unknown"],
+    ["lejsl", "free"],
     ["investing", "unknown"],
     ["dh", "restricted"],
     ["lalibre", "unknown"],
@@ -353,8 +354,8 @@ describe("full-page D1 jobs and publisher isolation", () => {
     expect(row().full_text).toBe("");
   });
   it("runs two different source jobs concurrently, not two articles from one source", async () => {
-    insert();
-    insert("b".repeat(64), "lejsl", "free");
+    const first = insert();
+    const second = insert("b".repeat(64), "dh", "free");
     let active = 0,
       max = 0;
     let unblock!: () => void;
@@ -370,15 +371,160 @@ describe("full-page D1 jobs and publisher isolation", () => {
         if (active === 2) unblock();
         await both;
         active--;
-        return new Response(
-          String(url).includes("lejsl")
-            ? `<script type="application/ld+json">${JSON.stringify({ "@type": "NewsArticle", isAccessibleForFree: true, articleBody: longText })}</script>`
-            : govHtml,
-          { headers: { "Content-Type": "text/html" } },
-        );
+        return new Response(String(url).includes("dhnet") ? ipmHtml : govHtml, {
+          headers: { "Content-Type": "text/html" },
+        });
       }),
     );
-    await scheduledArticles(memory.db);
+    await Promise.all([
+      collectArticle(memory.db, first.id),
+      collectArticle(memory.db, second.id),
+    ]);
     expect(max).toBe(2);
+  });
+  it.each([
+    ["available", "body_extracted"],
+    ["restricted", "access_restricted"],
+    ...[
+      "body_not_found",
+      "body_too_short",
+      "possible_access_restriction",
+      "publisher_policy",
+      "source_unverified",
+      "robots_disallowed",
+      "blocked_403",
+      "incomplete_body",
+      "unsupported_content",
+      "ambiguous_body",
+    ].map((reason) => ["unavailable", reason]),
+  ])(
+    "never retries terminal %s/%s after its deadline",
+    async (status, reason) => {
+      const { id } = insert();
+      memory.sqlite
+        .prepare(
+          "UPDATE trial_articles SET full_status=?,full_reason=?,full_next_fetch_at=1 WHERE id=?",
+        )
+        .run(status, reason, id);
+      const fetcher = network();
+      expect(await collectArticle(memory.db, id, fetcher)).toMatchObject({
+        processed: false,
+        status,
+        reason,
+      });
+      vi.stubGlobal("fetch", fetcher);
+      expect(await scheduledArticles(memory.db)).toEqual([]);
+      expect(fetcher).not.toHaveBeenCalled();
+    },
+  );
+  it.each([
+    "network_error",
+    "timeout",
+    "server_error",
+    "robots_unavailable",
+    "rate_limited",
+  ])("retries transient %s only after its deadline", async (reason) => {
+    const { id } = insert();
+    const now = Date.now();
+    memory.sqlite
+      .prepare(
+        "UPDATE trial_articles SET full_status='unavailable',full_reason=?,full_next_fetch_at=? WHERE id=?",
+      )
+      .run(reason, now + 1000, id);
+    const fetcher = network();
+    expect(await collectArticle(memory.db, id, fetcher, now)).toMatchObject({
+      processed: false,
+      reason: "not_due",
+    });
+    expect(fetcher).not.toHaveBeenCalled();
+    memory.sqlite
+      .prepare("UPDATE trial_articles SET full_next_fetch_at=0 WHERE id=?")
+      .run(id);
+    expect(await collectArticle(memory.db, id, fetcher)).toMatchObject({
+      processed: true,
+      status: "available",
+    });
+  });
+  it("background only fetches government and leaves IPM and JSL alone", async () => {
+    const government = insert();
+    const dh = insert("b".repeat(64), "dh", "free");
+    const jsl = insert("c".repeat(64), "lejsl", "free");
+    const fetcher = network();
+    vi.stubGlobal("fetch", fetcher);
+    expect(await scheduledArticles(memory.db)).toHaveLength(1);
+    expect(row(government.id).full_status).toBe("available");
+    expect(row(dh.id).full_status).toBe("pending");
+    expect(row(jsl.id).full_status).toBe("pending");
+    expect(
+      fetcher.mock.calls.every(
+        ([url]) => new URL(String(url)).hostname === "gouvernement.lu",
+      ),
+    ).toBe(true);
+  });
+  it("an active RSS lease prevents article fetch and contributes to nextAttemptAt", async () => {
+    const { id } = insert();
+    const deadline = Date.now() + 60000;
+    memory.sqlite
+      .prepare(
+        "UPDATE trial_sources SET lease_owner='rss',lease_until=? WHERE id='gouvernement'",
+      )
+      .run(deadline);
+    const fetcher = network();
+    expect(await collectArticle(memory.db, id, fetcher)).toMatchObject({
+      processed: false,
+      reason: "source_busy",
+      nextAttemptAt: deadline,
+    });
+    vi.stubGlobal("fetch", fetcher);
+    expect(await scheduledArticles(memory.db)).toEqual([]);
+    expect(fetcher).not.toHaveBeenCalled();
+  });
+  it.each([15000, 120000])(
+    "starts the source delay %i at request completion",
+    async (delay) => {
+      const { id } = insert();
+      const started = Date.now();
+      let completed = started;
+      const clock = vi.spyOn(Date, "now").mockImplementation(() => completed);
+      try {
+        const fetcher = network();
+        fetcher.mockImplementation(async (url) => {
+          if (String(url).endsWith("/robots.txt"))
+            return new Response(
+              `User-agent: *\nAllow: /\nCrawl-delay: ${delay / 1000}\n`,
+            );
+          completed = started + 10000;
+          return new Response(govHtml, {
+            headers: { "Content-Type": "text/html" },
+          });
+        });
+        await collectArticle(memory.db, id, fetcher, started);
+        expect(
+          memory.sqlite
+            .prepare(
+              "SELECT article_next_fetch_at FROM trial_sources WHERE id='gouvernement'",
+            )
+            .get()?.article_next_fetch_at,
+        ).toBe(completed + delay);
+      } finally {
+        clock.mockRestore();
+      }
+    },
+  );
+  it("revokes an old cached JSL result immediately even before its former deadline", async () => {
+    const { id } = insert(undefined, "lejsl", "free");
+    memory.sqlite
+      .prepare(
+        "UPDATE trial_articles SET full_status='available',full_text=?,full_next_fetch_at=? WHERE id=?",
+      )
+      .run(longText, Date.now() + 86400000, id);
+    const fetcher = network();
+    expect(await collectArticle(memory.db, id, fetcher)).toMatchObject({
+      processed: false,
+      status: "unavailable",
+      reason: "source_unverified",
+    });
+    expect(row(id).full_text).toBe("");
+    expect(fetcher).not.toHaveBeenCalled();
   });
 });

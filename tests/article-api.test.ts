@@ -16,8 +16,8 @@ beforeEach(() => {
   };
   memory.sqlite
     .prepare(
-      `INSERT INTO trial_articles(id,source_id,url,title,excerpt,published_at,collected_at,body_text)
-    VALUES(?,'dh','https://www.dhnet.be/elections/fixture','Élection présidentielle','Extrait',NULL,'2026-11-16T10:00:00Z','Paragraphe de test')`,
+      `INSERT INTO trial_articles(id,source_id,url,title,excerpt,published_at,collected_at,body_text,access_level)
+    VALUES(?,'dh','https://www.dhnet.be/elections/fixture','Élection présidentielle','Extrait',NULL,'2026-11-16T10:00:00Z','Paragraphe de test','free')`,
     )
     .run(id);
 });
@@ -65,7 +65,7 @@ describe("private article reading", () => {
       subtheme: "Élections",
       bodyText: "Paragraphe de test",
       imageUrl: null,
-      accessLevel: "unknown",
+      accessLevel: "free",
     });
     const workspace = await app.request(
       origin + "/api/trial/workspace",
@@ -86,10 +86,7 @@ describe("private article reading", () => {
       { headers },
       env,
     );
-    expect(await response.json()).toMatchObject({
-      accessLevel: "restricted",
-      bodyText: "",
-    });
+    expect(response.status).toBe(404);
     memory.sqlite.exec("UPDATE trial_sources SET enabled=0 WHERE id='dh'");
     expect(
       (

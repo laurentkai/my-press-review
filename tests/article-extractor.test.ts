@@ -126,7 +126,7 @@ describe("extraction des structures validées sans réseau", () => {
         page(body + "<p>Abonnez-vous pour lire la suite de cet article</p>"),
         "dh",
       ).status,
-    ).toBe("restricted");
+    ).toBe("unavailable");
   });
   it("refuse JSL hasPart payant même avec aperçu visible", () => {
     const metadata = article({

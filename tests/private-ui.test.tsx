@@ -364,20 +364,15 @@ describe("filtres et lecture des articles privés", () => {
     );
   });
 
-  it("présente l’extrait réservé et le cas sans texte avec le lien original", async () => {
+  it("exclut les abonnés et conserve le cas gratuit sans texte avec son original", async () => {
     backend();
     const user = await openWorkspace();
-    await user.click(screen.getByRole("button", { name: "Finale de tennis" }));
     expect(
-      await screen.findByText("Extrait réservé du flux"),
-    ).toBeInTheDocument();
+      screen.queryByRole("button", { name: "Finale de tennis" }),
+    ).not.toBeInTheDocument();
     expect(
-      screen.getByText("Accès réservé chez l’éditeur"),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(/Seul l’extrait du flux est présenté ici/),
-    ).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Retour à ma revue" }));
+      screen.queryByText("Extrait réservé du flux"),
+    ).not.toBeInTheDocument();
     await user.click(
       screen.getByRole("button", { name: "Annonce sans texte" }),
     );
@@ -409,26 +404,23 @@ describe("filtres et lecture des articles privés", () => {
     expect(reader.querySelector('img[src="x"]')).toBeNull();
   });
 
-  it("explique une erreur 404 et permet de revenir à la sélection", async () => {
+  it("retourne à la sélection si un article devient indisponible", async () => {
     backend({ detailStatus: 404 });
     const user = await openWorkspace();
     await user.click(
-      screen.getByRole("button", {
-        name: "Article de test privé",
-      }),
-    );
-    expect(await screen.findByRole("alert")).toHaveTextContent(
-      "Cet article n’est plus disponible dans votre revue.",
+      screen.getByRole("button", { name: "Article de test privé" }),
     );
     expect(
-      screen.getByRole("button", { name: "Réessayer" }),
+      await screen.findByText(
+        "Cet article n’est plus disponible et a été retiré de la revue.",
+      ),
     ).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Retour à ma revue" }));
     expect(
-      screen.getByRole("button", {
-        name: "Article de test privé",
-      }),
+      screen.getByRole("heading", { name: "Votre revue, en direct." }),
     ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Retour à ma revue" }),
+    ).not.toBeInTheDocument();
   });
 
   it("ferme la revue lors d’un 401 sur la lecture", async () => {

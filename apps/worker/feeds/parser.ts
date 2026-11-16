@@ -72,7 +72,11 @@ export function articleUrl(value: string, source: FeedSource): string | null {
     return null;
   }
 }
-export function parseFeed(xml: string, source: FeedSource): FeedItem[] {
+export function parseFeed(
+  xml: string,
+  source: FeedSource,
+  includeRestricted = false,
+): FeedItem[] {
   const parser = new SaxesParser({ xmlns: false });
   const stack: string[] = [];
   let root = "";
@@ -225,15 +229,16 @@ export function parseFeed(xml: string, source: FeedSource): FeedItem[] {
       const title = plainText(item.title ?? "", 500);
       const url = articleUrl(item.link ?? "", source);
       const rights = item["dcterms:accessrights"]?.trim().toUpperCase();
+      const paid = item["dpp:paid"]?.trim().toLowerCase();
       const accessLevel =
-        rights === "FREE"
-          ? "free"
-          : ["PAYING", "MEMBER"].includes(rights ?? "")
-            ? "restricted"
+        paid === "true" || ["PAYING", "MEMBER"].includes(rights ?? "")
+          ? "restricted"
+          : rights === "FREE" || paid === "false"
+            ? "free"
             : "unknown";
       const description = item.description ?? item.summary ?? "";
       const image = images.sort((a, b) => a.priority - b.priority)[0];
-      if (title && url && item["dpp:paid"]?.trim().toLowerCase() !== "true")
+      if (title && url && (includeRestricted || paid !== "true"))
         items.push({
           url,
           title,

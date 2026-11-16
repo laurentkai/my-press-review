@@ -144,7 +144,9 @@ export async function fetchArticlePage(
     source,
     fetcher,
     signal,
-    (target) => rules.isAllowed(target, "MyPressReview") === true,
+    (target) =>
+      new URL(target).origin === origin &&
+      rules.isAllowed(target, "MyPressReview") === true,
   );
   if (!response.ok) {
     await response.body?.cancel();

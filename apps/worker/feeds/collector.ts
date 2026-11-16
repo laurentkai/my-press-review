@@ -35,10 +35,10 @@ export async function fetchFeed(
           "application/rss+xml, application/atom+xml, application/xml, text/xml, */*;q=0.2",
         "User-Agent":
           "MyPressReview/0.1 (+https://github.com/laurentkai/my-press-review)",
-        ...(state.reading_metadata_version !== 0 && state.etag
+        ...((state.reading_metadata_version ?? 2) >= 2 && state.etag
           ? { "If-None-Match": state.etag }
           : {}),
-        ...(state.reading_metadata_version !== 0 && state.last_modified
+        ...((state.reading_metadata_version ?? 2) >= 2 && state.last_modified
           ? { "If-Modified-Since": state.last_modified }
           : {}),
       },
@@ -105,7 +105,7 @@ export async function fetchFeed(
   } finally {
     reader.releaseLock();
   }
-  const items = parseFeed(xml, source).slice(0, 30);
+  const items = parseFeed(xml, source, true).slice(0, 30);
   return {
     status: items.length ? "ok" : "empty",
     items,
@@ -125,9 +125,9 @@ export async function collectSource(
   const owner = crypto.randomUUID();
   const state = await db
     .prepare(
-      "UPDATE trial_sources SET lease_owner=?, lease_until=?, last_attempt_at=? WHERE id=? AND enabled=1 AND next_fetch_at<=? AND lease_until<=? RETURNING id, etag, last_modified, reading_metadata_version",
+      "UPDATE trial_sources SET lease_owner=?, lease_until=?, last_attempt_at=? WHERE id=? AND enabled=1 AND next_fetch_at<=? AND lease_until<=? AND article_lease_until<=? RETURNING id, etag, last_modified, reading_metadata_version",
     )
-    .bind(owner, now + 120_000, now, id, now, now)
+    .bind(owner, now + 120_000, now, id, now, now, now)
     .first<SourceState>();
   if (!state) return { processed: false, status: "not_due" };
   try {
@@ -137,6 +137,18 @@ export async function collectSource(
     for (const item of result.items) {
       const articleId = await digest(id + "\n" + item.url);
       const topic = classifyArticle(item, id);
+      if (item.accessLevel === "restricted") {
+        // Keep only an existing tombstone to revoke an earlier free article.
+        // Never insert a new subscriber-only title/excerpt into the review.
+        writes.push(
+          db
+            .prepare(
+              `UPDATE trial_articles SET access_level='restricted',excerpt='',body_text='',full_text='',full_status='restricted',full_reason='access_restricted',image_url=NULL,image_credit='',collected_at=? WHERE source_id=? AND url=? AND EXISTS(SELECT 1 FROM trial_sources WHERE id=? AND enabled=1 AND lease_owner=? AND lease_until>?)`,
+            )
+            .bind(collected, id, item.url, id, owner, Date.now()),
+        );
+        continue;
+      }
       // Every write is conditional on the still-valid lease and source activation.
       writes.push(
         db
@@ -180,7 +192,7 @@ export async function collectSource(
     writes.push(
       db
         .prepare(
-          "UPDATE trial_sources SET status=?,last_success_at=?,next_fetch_at=?,etag=?,last_modified=?,last_item_count=?,reading_metadata_version=1,lease_until=0,lease_owner=NULL WHERE id=? AND lease_owner=? AND enabled=1",
+          "UPDATE trial_sources SET status=?,last_success_at=?,next_fetch_at=?,etag=?,last_modified=?,last_item_count=?,reading_metadata_version=2,lease_until=0,lease_owner=NULL WHERE id=? AND lease_owner=? AND enabled=1",
         )
         .bind(
           result.status,
@@ -236,9 +248,9 @@ export async function scheduledCollection(db: D1Database, now = Date.now()) {
   // One source per invocation keeps each collection within Workers query/CPU limits.
   const state = await db
     .prepare(
-      "SELECT id FROM trial_sources WHERE enabled=1 AND next_fetch_at<=? AND lease_until<=? ORDER BY next_fetch_at,id LIMIT 1",
+      "SELECT id FROM trial_sources WHERE enabled=1 AND next_fetch_at<=? AND lease_until<=? AND article_lease_until<=? ORDER BY next_fetch_at,id LIMIT 1",
     )
-    .bind(now, now)
+    .bind(now, now, now)
     .first<{ id: string }>();
   if (state) await collectSource(db, state.id);
   else await scheduledArticles(db, now);
