@@ -166,6 +166,36 @@ describe("temporary private access", () => {
   it("limits login attempts durably and refuses oversized payloads", async () => {
     for (let i = 0; i < 8; i++) expect((await login("wrong")).status).toBe(401);
     expect((await login()).status).toBe(429);
+    for (let i = 0; i < 3; i++) expect((await login()).status).toBe(429);
+    expect(
+      memory.sqlite.prepare("SELECT attempts FROM trial_login_limits").get()
+        ?.attempts,
+    ).toBe(8);
     expect((await login("x".repeat(1100))).status).toBe(413);
+  });
+  it("clears the browser cookie even if its session has already expired", async () => {
+    const session = await cookie();
+    memory.sqlite.exec("UPDATE trial_sessions SET expires_at=0");
+    const response = await app.request(
+      origin + "/api/trial/logout",
+      { method: "POST", headers: { Cookie: session, Origin: origin } },
+      env,
+    );
+    expect(response.status).toBe(200);
+    expect(response.headers.get("set-cookie")).toContain("Max-Age=0");
+    expect(
+      memory.sqlite
+        .prepare("SELECT COUNT(*) AS count FROM trial_sessions")
+        .get()?.count,
+    ).toBe(0);
+    expect(
+      (
+        await app.request(
+          origin + "/api/trial/logout",
+          { method: "POST", headers: { Origin: "https://attacker.test" } },
+          env,
+        )
+      ).status,
+    ).toBe(403);
   });
 });

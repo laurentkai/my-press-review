@@ -53,7 +53,6 @@ export function articleUrl(value: string, source: FeedSource): string | null {
   }
 }
 export function parseFeed(xml: string, source: FeedSource): FeedItem[] {
-  if (/<!\s*(?:DOCTYPE|ENTITY)/i.test(xml)) throw new FeedError("invalid_xml");
   const parser = new SaxesParser({ xmlns: false });
   const stack: string[] = [];
   let root = "";
@@ -79,6 +78,9 @@ export function parseFeed(xml: string, source: FeedSource): FeedItem[] {
         item[name] = ((item[name] ?? "") + text).slice(0, 6000);
     }
   };
+  parser.on("doctype", () => {
+    throw new FeedError("invalid_xml");
+  });
   parser.on("opentag", (tag) => {
     const name = tag.name.toLowerCase();
     stack.push(name);

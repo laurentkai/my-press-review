@@ -70,8 +70,15 @@ export async function loginTrial(c: Context<{ Bindings: Bindings }>) {
     const key = await digest(
       `${c.req.header("CF-Connecting-IP") ?? "local"}:${Math.floor(now / 600_000)}`,
     );
+    const previous = await c.env.DB.prepare(
+      "SELECT attempts FROM trial_login_limits WHERE bucket=?",
+    )
+      .bind(key)
+      .first<{ attempts: number }>();
+    if (previous && previous.attempts >= 8)
+      return c.json({ error: "RATE_LIMITED" }, 429, { "Retry-After": "600" });
     const limit = await c.env.DB.prepare(
-      "INSERT INTO trial_login_limits(bucket, attempts, expires_at) VALUES(?,1,?) ON CONFLICT(bucket) DO UPDATE SET attempts=attempts+1 RETURNING attempts",
+      "INSERT INTO trial_login_limits(bucket, attempts, expires_at) VALUES(?,1,?) ON CONFLICT(bucket) DO UPDATE SET attempts=attempts+1 WHERE trial_login_limits.attempts<8 RETURNING attempts",
     )
       .bind(key, now + 600_000)
       .first<{ attempts: number }>();

@@ -137,7 +137,7 @@ export async function collectSource(
           .prepare(
             `INSERT INTO trial_articles(id,source_id,url,title,excerpt,published_at,collected_at)
         SELECT ?,?,?,?,?,?,? WHERE EXISTS(SELECT 1 FROM trial_sources WHERE id=? AND enabled=1 AND lease_owner=? AND lease_until>?)
-        ON CONFLICT(source_id,url) DO UPDATE SET title=excluded.title,excerpt=excluded.excerpt,published_at=COALESCE(excluded.published_at,trial_articles.published_at)`,
+        ON CONFLICT(source_id,url) DO UPDATE SET title=excluded.title,excerpt=excluded.excerpt,published_at=COALESCE(excluded.published_at,trial_articles.published_at),collected_at=excluded.collected_at`,
           )
           .bind(
             articleId,
@@ -175,6 +175,15 @@ export async function collectSource(
           id,
           owner,
         ),
+    );
+    // Pausing during a request must release the lease too, without accepting
+    // its result or touching a lease acquired by a later collector.
+    writes.push(
+      db
+        .prepare(
+          "UPDATE trial_sources SET lease_until=0,lease_owner=NULL WHERE id=? AND lease_owner=?",
+        )
+        .bind(id, owner),
     );
     await db.batch(writes);
     return {

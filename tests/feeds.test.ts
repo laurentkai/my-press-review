@@ -51,6 +51,21 @@ describe("RSS normalization and bounds", () => {
       publishedAt: "2026-11-16T09:00:00.000Z",
     });
   });
+  it("accepts harmless DOCTYPE text inside CDATA while rejecting real DTDs", () => {
+    const feed = xml(
+      item().replace(
+        "<description><![CDATA[",
+        "<description><![CDATA[Exemple littéral <!DOCTYPE sample> ",
+      ),
+    );
+    expect(parseFeed(feed, source)).toHaveLength(1);
+    expect(() =>
+      parseFeed(
+        '<!DOCTYPE rss SYSTEM "https://example.com/dtd"><rss/>',
+        source,
+      ),
+    ).toThrow("invalid_xml");
+  });
   it("supports Atom and RSS sent with the wrong media type", async () => {
     expect(
       parseFeed(
@@ -180,7 +195,12 @@ describe("D1 collection state, lease and deduplication", () => {
     });
     expect(fetcher).toHaveBeenCalledTimes(1);
     sqlite.exec("UPDATE trial_sources SET next_fetch_at=0 WHERE id='dh'");
-    await collectSource(db, "dh", fetcher);
+    const refreshedAt = Date.now() + 1000;
+    await collectSource(db, "dh", fetcher, refreshedAt);
+    expect(
+      sqlite.prepare("SELECT collected_at FROM trial_articles").get()
+        ?.collected_at,
+    ).toBe(new Date(refreshedAt).toISOString());
     expect(
       sqlite.prepare("SELECT COUNT(*) AS count FROM trial_articles").get()
         ?.count,
@@ -250,6 +270,29 @@ describe("D1 collection state, lease and deduplication", () => {
     expect(fetch).toHaveBeenCalledTimes(1);
     expect(
       sqlite.prepare("SELECT COUNT(*) AS count FROM trial_sessions").get()
+        ?.count,
+    ).toBe(0);
+  });
+  it("releases the lease and skips writes when a source is paused during fetch", async () => {
+    const { db, sqlite } = database();
+    const fetcher = vi.fn<typeof fetch>().mockImplementation(async () => {
+      sqlite.exec("UPDATE trial_sources SET enabled=0 WHERE id='dh'");
+      return new Response(xml(item()));
+    });
+    await collectSource(db, "dh", fetcher);
+    const state = sqlite
+      .prepare(
+        "SELECT enabled,lease_until,lease_owner,last_success_at FROM trial_sources WHERE id='dh'",
+      )
+      .get();
+    expect(state).toMatchObject({
+      enabled: 0,
+      lease_until: 0,
+      lease_owner: null,
+      last_success_at: null,
+    });
+    expect(
+      sqlite.prepare("SELECT COUNT(*) AS count FROM trial_articles").get()
         ?.count,
     ).toBe(0);
   });

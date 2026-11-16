@@ -27,6 +27,11 @@ app.use("/api/*", async (c, next) => {
       c.req.path,
     );
   const login = c.req.path === "/api/trial/login" && c.req.method === "POST";
+  // Logout is idempotent, including after expiry; it never exposes data.
+  if (c.req.path === "/api/trial/logout" && c.req.method === "POST") {
+    if (!sameOrigin(c)) return c.json({ error: "ORIGIN_REFUSED" }, 403);
+    return next();
+  }
   const trialRoute =
     c.req.path === "/api/trial/workspace" ||
     c.req.path === "/api/trial/logout" ||
